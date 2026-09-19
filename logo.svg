@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 80" width="520" height="80">
+  <!-- Alertes Vols Bénin — Logo horizontal
+       Icône + wordmark Sora 600 + barre tricolore 1:2:1
+       Pour header web, signature email, documents -->
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700&amp;display=swap');</style>
+  </defs>
+
+  <!-- Icône carrée verte -->
+  <rect x="0" y="4" width="64" height="64" rx="14" fill="#008751"/>
+  <g transform="translate(32, 34)">
+    <path d="
+      M 0,-22
+      C 1.6,-21 2.8,-19 2.8,-16
+      L 2.8,-7
+      L 22,-3
+      L 22,1.5
+      L 2.8,4.5
+      L 2.8,13.5
+      L 10.5,18.8
+      L 10.5,21.8
+      L 0,17
+      L -10.5,21.8
+      L -10.5,18.8
+      L -2.8,13.5
+      L -2.8,4.5
+      L -22,1.5
+      L -22,-3
+      L -2.8,-7
+      L -2.8,-16
+      C -2.8,-19 -1.6,-21 0,-22
+      Z
+    " fill="white" fill-opacity="0.95"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="80" y="42" font-family="'Sora', 'Poppins', 'Montserrat', system-ui, sans-serif" font-size="26" font-weight="700" fill="#1B2B3C" letter-spacing="-0.3">Alertes Vols Bénin</text>
+
+  <!-- Barre tricolore 1:2:1 sous le texte -->
+  <rect x="80" y="54" width="66" height="3.5" rx="1.75" fill="#008751"/>
+  <rect x="146" y="54" width="132" height="3.5" fill="#FCD116"/>
+  <rect x="278" y="54" width="66" height="3.5" rx="1.75" fill="#E8112D"/>
+</svg>

@@ -1,0 +1,124 @@
+{
+  "colors": [
+    "rgb(17, 48, 56)",
+    "rgb(255, 255, 255)",
+    "rgb(0, 0, 0)",
+    "rgb(170, 197, 19)",
+    "rgb(64, 95, 46)"
+  ],
+  "bgColors": [
+    "rgb(247, 243, 234)",
+    "rgba(17, 43, 54, 0.22)",
+    "rgb(64, 95, 46)",
+    "rgb(248, 186, 0)",
+    "rgb(221, 12, 21)"
+  ],
+  "fonts": [
+    "Aeonik",
+    "Times New Roman"
+  ],
+  "elements": {
+    "body": {
+      "color": "rgb(17, 48, 56)",
+      "backgroundColor": "rgb(247, 243, 234)",
+      "fontFamily": "Aeonik, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "normal",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(17, 48, 56)"
+    },
+    "h1": {
+      "color": "rgb(17, 48, 56)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "fontFamily": "Aeonik, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "fontSize": "56px",
+      "fontWeight": "700",
+      "lineHeight": "62.72px",
+      "letterSpacing": "-0.56px",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(17, 48, 56)"
+    },
+    "p": {
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "fontFamily": "Aeonik, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "fontSize": "18px",
+      "fontWeight": "500",
+      "lineHeight": "30.6px",
+      "letterSpacing": "normal",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(255, 255, 255)"
+    },
+    "a": {
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "fontFamily": "Aeonik, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "fontSize": "15px",
+      "fontWeight": "600",
+      "lineHeight": "normal",
+      "letterSpacing": "normal",
+      "padding": "15px 30px",
+      "borderRadius": "999px",
+      "border": "0px none rgb(255, 255, 255)"
+    },
+    "header": {
+      "color": "rgb(17, 48, 56)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "fontFamily": "Aeonik, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "normal",
+      "padding": "40px 24px 0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(17, 48, 56)"
+    },
+    "footer": {
+      "color": "rgb(17, 48, 56)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "fontFamily": "Aeonik, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "normal",
+      "padding": "28px 24px 0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(17, 48, 56)"
+    },
+    "hero": {
+      "color": "rgb(17, 48, 56)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "fontFamily": "Aeonik, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "normal",
+      "padding": "48px 24px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(17, 48, 56)"
+    }
+  },
+  "tokens": {
+    "--green-dark": "#2C4220",
+    "--green": "#405F2E",
+    "--green-mid": "#7B9A28",
+    "--green-light": "#AAC513",
+    "--gold": "#F8BA00",
+    "--gold-ink": "#4A3406",
+    "--red": "#DD0C15",
+    "--text": "#113038",
+    "--muted": "#5C6E74",
+    "--line": "rgba(17, 43, 54, 0.08)",
+    "--cream": "#F7F3EA",
+    "--ivory": "#F9F6EE",
+    "--mint": "#EFF5E3",
+    "--font-main": "'Aeonik', ui-sans-serif, system-ui, -apple-system, sans-serif"
+  },
+  "title": "Charter — Bénin Tours S.A. | Bientôt disponible",
+  "metaDescription": "Votre plateforme dédiée aux vols spéciaux vers le Bénin sera bientôt disponible. Retrouvez très bientôt les prochaines dates des vols spéciaux vers le Bénin."
+}

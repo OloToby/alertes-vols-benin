@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" width="280" height="200">
+  <!-- Alertes Vols Bénin — Logo empilé
+       Icône centrée + wordmark en dessous + barre tricolore
+       Pour avatar carré, favicon Apple Touch, posts sociaux -->
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700&amp;display=swap');</style>
+  </defs>
+
+  <!-- Icône carrée verte -->
+  <rect x="100" y="10" width="80" height="80" rx="18" fill="#008751"/>
+  <g transform="translate(140, 48)">
+    <path d="
+      M 0,-26
+      C 2,-24.5 3.2,-22 3.2,-18.5
+      L 3.2,-8
+      L 26,-3.5
+      L 26,2
+      L 3.2,5.5
+      L 3.2,16
+      L 12.5,22
+      L 12.5,25.5
+      L 0,20
+      L -12.5,25.5
+      L -12.5,22
+      L -3.2,16
+      L -3.2,5.5
+      L -26,2
+      L -26,-3.5
+      L -3.2,-8
+      L -3.2,-18.5
+      C -3.2,-22 -2,-24.5 0,-26
+      Z
+    " fill="white" fill-opacity="0.95"/>
+  </g>
+
+  <!-- Wordmark centré -->
+  <text x="140" y="124" font-family="'Sora', 'Poppins', 'Montserrat', system-ui, sans-serif" font-size="22" font-weight="700" fill="#1B2B3C" text-anchor="middle" letter-spacing="-0.3">Alertes Vols Bénin</text>
+
+  <!-- Barre tricolore 1:2:1 centrée -->
+  <rect x="62" y="140" width="39" height="3.5" rx="1.75" fill="#008751"/>
+  <rect x="101" y="140" width="78" height="3.5" fill="#FCD116"/>
+  <rect x="179" y="140" width="39" height="3.5" rx="1.75" fill="#E8112D"/>
+</svg>

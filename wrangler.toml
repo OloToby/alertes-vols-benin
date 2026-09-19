@@ -1,0 +1,101 @@
+name = "benin-flight-watcher"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Vérifie la page toutes les minutes.
+[triggers]
+crons = ["*/1 * * * *", "0 6,18 * * *"]
+
+# KV — état du watcher (hash, flags, rate limiting)
+[[kv_namespaces]]
+binding = "STATE"
+id = "b824235a50a943718c0eb852c1b1eb98"
+
+# D1 — base de données des abonnés
+# Créer avec : wrangler d1 create benin-subscribers
+# Puis appliquer le schéma : wrangler d1 execute benin-subscribers --file=schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "benin-subscribers"
+database_id = "080b31f4-e802-48c3-b347-cb87100d0920"
+
+# Queue — fan-out fiable vers les abonnés (retries automatiques, pas de perte)
+# Créer avec : wrangler queues create benin-fanout
+[[queues.producers]]
+binding = "FANOUT_QUEUE"
+queue = "benin-fanout"
+
+[[queues.consumers]]
+queue = "benin-fanout"
+
+[vars]
+# URL de la page à surveiller
+TARGET_URL = "https://www.voyage.benin.bj/"
+
+# Phrases qui, TANT QU'ELLES SONT PRÉSENTES, signifient "pas encore ouvert"
+PLACEHOLDER_MARKERS = "bientôt disponible,sera bientôt,coming soon"
+
+# URL publique du Worker — nécessaire pour les liens dans les emails (confirm, unsubscribe)
+APP_BASE_URL = "https://alertesvolsbenin.com"
+
+# Clé publique Cloudflare Turnstile (visible dans le HTML — pas un secret)
+TURNSTILE_SITE_KEY = "0x4AAAAAAEpmuQ5vwMiDBYmH"
+
+# Routes profondes à sonder (HEAD) pour la cross-confirmation
+# Si le site utilise d'autres chemins, modifier ici sans redéployer le code
+DEEP_ROUTES = "/booking,/vols,/conditions-generales,/reservations,/reservation,/reserver,/flights,/book"
+
+# URL du flux RSS pour la veille gouvernementale (Google News par défaut)
+# Assumption : les annonces pertinentes contiennent "vols spéciaux", "affrètement", "Bénin Tours"
+GOV_RSS_URL = "https://news.google.com/rss/search?q=%22vols+sp%C3%A9ciaux%22+OR+%22affr%C3%A8tement%22+B%C3%A9nin+OR+%22B%C3%A9nin+Tours%22&hl=fr&gl=FR&ceid=FR:fr"
+
+# Texte du prix affiché sur la landing (ex: "10 €")
+SUBSCRIPTION_PRICE_DISPLAY = "5,99 €"
+
+# Montant numérique envoyé à l'API PayPal (ex: "10.00")
+SUBSCRIPTION_PRICE_AMOUNT = "5.99"
+
+# Mode PayPal : "sandbox" pour les tests, "live" pour la production
+# Secrets requis : PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET (wrangler secret put)
+PAYPAL_MODE = "live"
+
+# ── Résilience & haute vigilance (tâches 1-5) ──────────────────────────────
+
+# Tâche 1 — Jours consécutifs sans changement de hash avant alerte "monitoring potentiellement aveugle"
+# Augmenter si le site est légitimement stable pendant de longues périodes.
+STALE_CHECK_DAYS = "7"
+
+# Tâche 2 — Nombre de checks consécutifs avec réponse anti-bot avant alerte admin
+ANTIBOT_ALERT_THRESHOLD = "3"
+
+# Tâche 4 — Durée (jours) du flag activé via POST /admin/high-alert
+# Effet : supprime la double-confirmation (1 check croisé positif suffit pour le fan-out).
+# N'augmente PAS la fréquence de scan — celle-ci reste 1/min, limitée par l'architecture cron.
+HIGH_ALERT_TTL_DAYS = "30"
+
+# Tâche 5 — Jours sans changement d'état + signal externe actif → alerte watchdog
+SILENCE_WARN_DAYS = "14"
+
+# Tâche 3 — Âge maximum des articles RSS pour activer gov_signal_active
+# Articles plus anciens que N jours sont ignorés comme signal (ajoutés à gov_seen_articles
+# pour ne pas être retraités, mais ne déclenchent pas le bypass de double-confirmation).
+# Valeur basse recommandée (3j) pour éviter que Google News resurfasse de vieux articles.
+GOV_MAX_ARTICLE_AGE_DAYS = "3"
+
+# Tâche 3 — Sources RSS gouvernementales additionnelles (séparées par virgule, optionnel)
+# Exemples : flux RSS de gouv.bj, agencebeninpresse.info, etc.
+# Chaque source est traitée avec la même logique de confiance que GOV_RSS_URL.
+# GOV_EXTRA_SOURCES = "https://exemple.gouv.bj/rss,https://autre-source.bj/feed"
+GOV_EXTRA_SOURCES = ""
+
+# ── Browser Rendering API (tâche 1 — check de dérive SPA) ──────────────────
+# Requiert : plan Workers Paid + addon Browser Rendering activé dans le dashboard
+# Étapes pour activer :
+#   1. Activer Browser Rendering sur https://dash.cloudflare.com → Workers → Browser Rendering
+#   2. Décommenter le bloc [browser] ci-dessous
+#   3. npm install @cloudflare/puppeteer
+#   4. Dans src/index.js, fonction doHeadlessCompare() : décommenter les 7 lignes indiquées
+#   5. wrangler deploy
+#
+# [browser]
+# binding = "BROWSER"

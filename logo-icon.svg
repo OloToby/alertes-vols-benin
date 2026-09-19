@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Alertes Vols Bénin — Logo icône
+       Carré arrondi vert #008751, avion blanc stylisé (vue du dessus)
+       Utilisable comme favicon, avatar, icône d'app -->
+  <rect width="512" height="512" rx="96" fill="#008751"/>
+  <g transform="translate(256, 246)">
+    <!-- Avion top-down simplifié -->
+    <path d="
+      M 0,-120
+      C 8,-116 14,-104 14,-88
+      L 14,-40
+      L 120,-16
+      L 120,8
+      L 14,24
+      L 14,72
+      L 56,100
+      L 56,116
+      L 0,92
+      L -56,116
+      L -56,100
+      L -14,72
+      L -14,24
+      L -120,8
+      L -120,-16
+      L -14,-40
+      L -14,-88
+      C -14,-104 -8,-116 0,-120
+      Z
+    " fill="white" fill-opacity="0.95"/>
+  </g>
+</svg>
