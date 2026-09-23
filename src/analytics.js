@@ -44,11 +44,18 @@ function referrerType(ref) {
 }
 
 // env remplace db en premier argument — donne accès à env.DB et env.STATE (sel KV)
-export async function trackEvent(env, request, eventName, metadata = null) {
+export async function trackEvent(env, request, eventName, metadata = null, pageOverride = null) {
   if (!env?.DB) return;
   try {
     const ua  = request.headers.get('User-Agent') || '';
     const ref = request.headers.get('Referer')    || '';
+    // pageOverride : page réelle de l'utilisateur (beacon client ou Referer),
+    // sinon fallback sur le pathname de la requête courante.
+    let page = pageOverride;
+    if (!page) {
+      const referer = request.headers.get('Referer');
+      page = referer ? new URL(referer).pathname : new URL(request.url).pathname;
+    }
     await env.DB.prepare(
       `INSERT INTO analytics_events
          (session_id, event_name, page, metadata, country, device, browser, referrer_type)
@@ -56,7 +63,7 @@ export async function trackEvent(env, request, eventName, metadata = null) {
     ).bind(
       await sessionId(request, env.STATE),
       eventName,
-      new URL(request.url).pathname,
+      page,
       metadata ? JSON.stringify(metadata) : null,
       request.headers.get('CF-IPCountry') || 'XX',
       device(ua),

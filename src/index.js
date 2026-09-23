@@ -160,7 +160,7 @@ export default {
           const body = await request.json();
           const allowed = ['scroll_depth', 'share_click', 'cta_click'];
           if (allowed.includes(String(body.e || '')))
-            await trackEvent(env, request, body.e, { v: body.v ?? null });
+            await trackEvent(env, request, body.e, { v: body.v ?? null }, body.p || null);
         } catch {}
       })());
       return new Response('ok', { status: 200, headers: { 'content-type': 'text/plain' } });

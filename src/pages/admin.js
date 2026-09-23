@@ -540,7 +540,7 @@ async function loadAnalytics(days=30){
 }
 
 const REFERRER_LABELS={direct:'Direct',facebook:'Facebook',whatsapp:'WhatsApp',instagram:'Instagram',google:'Google',twitter:'Twitter',youtube:'YouTube',tiktok:'TikTok',other:'Autre'};
-const FIELD_LABELS={email:'Email',prenom:'Prénom',nom:'Nom',telephone:'Téléphone',turnstile:'CAPTCHA',ratelimit:'Rate limit',formulaire:'Formulaire',duplicate:'Email déjà inscrit',ratelimit:'Limite dépassée'};
+const FIELD_LABELS={email:'Email',prenom:'Prénom',nom:'Nom',telephone:'Téléphone',turnstile:'Anti-bot (non bloquant)',ratelimit:'Limite dépassée',formulaire:'Formulaire',duplicate:'Email déjà inscrit'};
 const DEVICE_LABELS={mobile:'Mobile',tablet:'Tablette',desktop:'Desktop',unknown:'Inconnu'};
 
 const COUNTRY_FLAGS={FR:'🇫🇷',BE:'🇧🇪',BJ:'🇧🇯',CI:'🇨🇮',SN:'🇸🇳',CM:'🇨🇲',TG:'🇹🇬',GH:'🇬🇭',GB:'🇬🇧',DE:'🇩🇪',IT:'🇮🇹',ES:'🇪🇸',US:'🇺🇸',CA:'🇨🇦',XX:'🌍'};
@@ -566,7 +566,6 @@ function renderAnalytics(data,selectedDays){
   var fSteps=[
     {key:'landing',label:'Landing page'},
     {key:'inscription',label:'Page inscription'},
-    {key:'form_submit',label:'Formulaire soumis'},
     {key:'payment_init',label:'Paiement initié'},
     {key:'payment_done',label:'Abonnement activé'}
   ];
@@ -650,8 +649,17 @@ function renderAnalytics(data,selectedDays){
     if(mobPct>=40){
       h+='<div class="a-insight"><div class="a-dot y"><\/div><div class="a-insight-body"><div class="a-insight-txt"><strong>'+mobPct+'%</strong> des visites viennent de mobile. Tester l&#39;inscription sur smartphone.<\/div><a class="a-insight-act" href="/inscription" target="_blank">Tester sur mobile<\/a><\/div><\/div>';
     }
-    if(totalFormErrors>0){
-      h+='<div class="a-insight"><div class="a-dot r"><\/div><div class="a-insight-body"><div class="a-insight-txt"><strong>'+fmt(totalFormErrors)+'</strong> erreur'+(totalFormErrors>1?'s':'')+' sur le formulaire. Voir le détail ci-dessous.<\/div><\/div><\/div>';
+    var realFormErrors=formErrors.filter(function(e){return e.detail!=='turnstile';}).reduce(function(s,e){return s+e.n;},0);
+    if(realFormErrors>0){
+      h+='<div class="a-insight"><div class="a-dot r"><\/div><div class="a-insight-body"><div class="a-insight-txt"><strong>'+fmt(realFormErrors)+'</strong> erreur'+(realFormErrors>1?'s':'')+' bloquante'+(realFormErrors>1?'s':'')+' sur le formulaire (hors anti-bot). Voir le détail ci-dessous.<\/div><\/div><\/div>';
+    }
+    var otherRow=(byDim.referrer||[]).find(function(r){return r.val==='other';});
+    var otherConv=(data.conv_perf||[]).find(function(r){return r.dim==='source'&&r.val==='other';});
+    if(otherConv&&otherConv.visits>0&&otherConv.payments>0){
+      var otherPct=Math.round(otherConv.payments/otherConv.visits*100);
+      if(otherPct>=10){
+        h+='<div class="a-insight"><div class="a-dot y"><\/div><div class="a-insight-body"><div class="a-insight-txt">Source "Autre" : <strong>'+otherPct+'% de conversion</strong> sur '+fmt(otherConv.visits)+' visites. Probablement du trafic interne ou des liens très qualifiés — à exclure des métriques réelles.<\/div><\/div><\/div>';
+      }
     }
   }
   h+='<\/div><\/div>';
@@ -774,12 +782,11 @@ function renderDiagnostic(data){
   (data.funnel||[]).forEach(function(r){fm2[r.step]=r.sessions||0;});
   var dropSteps=[
     {from:'landing',to:'inscription',label:'Landing → Inscription'},
-    {from:'inscription',to:'form_submit',label:'Inscription → Formulaire'},
-    {from:'form_submit',to:'payment_init',label:'Formulaire → Paiement'},
+    {from:'inscription',to:'payment_init',label:'Inscription → Paiement'},
     {from:'payment_init',to:'payment_done',label:'Paiement → Activation'}
   ];
 
-  var evtCls={page_view:'pv',payment_completed:'pay',payment_initiated:'pay',form_step1_success:'pay',form_error:'err',payment_error:'err',cta_click:'cta',scroll_depth:'cta',share_click:'cta'};
+  var evtCls={page_view:'pv',payment_completed:'pay',payment_initiated:'pay',form_error:'err',payment_error:'err',cta_click:'cta',scroll_depth:'cta',share_click:'cta'};
 
   var h='';
   h+='<hr class="a-diag-sep">';

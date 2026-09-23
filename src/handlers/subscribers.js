@@ -327,7 +327,7 @@ export async function handleCreateStripeSession(request, env) {
 
     if (env.TURNSTILE_SECRET_KEY && turnstileToken) {
       const ok = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip);
-      if (!ok) await trackEvent(env, request, 'form_error', { field: 'turnstile' });
+      if (!ok) console.warn(`Turnstile failed ip=${ip}`);
     }
 
     const existing = await env.DB.prepare(
@@ -344,7 +344,6 @@ export async function handleCreateStripeSession(request, env) {
       reactivate: existing?.status === "unsubscribed",
     });
 
-    await trackEvent(env, request, 'form_step1_success');
     await trackEvent(env, request, 'payment_initiated');
 
     return new Response(JSON.stringify({ url: session.url }), {
@@ -469,16 +468,13 @@ export async function handleAdminAnalytics(request, env) {
          SELECT 'inscription',2,COUNT(DISTINCT session_id)
            FROM analytics_events WHERE event_name='page_view' AND page='/inscription' AND created_at>=?
          UNION ALL
-         SELECT 'form_submit',3,COUNT(DISTINCT session_id)
-           FROM analytics_events WHERE event_name='form_step1_success' AND created_at>=?
-         UNION ALL
-         SELECT 'payment_init',4,COUNT(DISTINCT session_id)
+         SELECT 'payment_init',3,COUNT(DISTINCT session_id)
            FROM analytics_events WHERE event_name='payment_initiated' AND created_at>=?
          UNION ALL
-         SELECT 'payment_done',5,COUNT(DISTINCT session_id)
+         SELECT 'payment_done',4,COUNT(DISTINCT session_id)
            FROM analytics_events WHERE event_name='payment_completed' AND created_at>=?
          ORDER BY ord`
-      ).bind(since, since, since, since, since),
+      ).bind(since, since, since, since),
 
       env.DB.prepare(
         `SELECT event_name,

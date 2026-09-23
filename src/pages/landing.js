@@ -613,7 +613,7 @@ ${shareFabHtml(shareUrl)}
   var sent={};
   function beacon(e,v){
     if(sent[e+v])return;sent[e+v]=1;
-    fetch('/track',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({e:e,v:v})}).catch(function(){});
+    fetch('/track',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({e:e,v:v,p:window.location.pathname})}).catch(function(){});
   }
   window.addEventListener('scroll',function(){
     var pct=Math.round((window.scrollY/(document.documentElement.scrollHeight-window.innerHeight||1))*100);
