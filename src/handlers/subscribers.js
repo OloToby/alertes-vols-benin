@@ -1,10 +1,11 @@
 import { escapeHtml, sendSubscriberSms } from "../notify.js";
-import { getPaypalToken, createPaypalOrder, capturePaypalOrder, createPaypalCheckout } from "./paypal.js";
+import { createStripeCheckoutSession, retrieveStripeSession } from "./stripe.js";
 import { subscribePage } from "../pages/landing.js";
 import { inscriptionPage } from "../pages/inscription.js";
 import { adminPage } from "../pages/admin.js";
 import { confirmEmailSentPage, messagePage, confirmationPage } from "../pages/simple-pages.js";
 import { alertEmailHtml, confirmationEmailHtml, welcomeEmailHtml, sendWelcomeEmail } from "../pages/emails.js";
+import { trackEvent } from "../analytics.js";
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_TTL = 3600;
@@ -48,7 +49,7 @@ function buildAlertSms(firstName, lastName, triggeredAt) {
 function isValidPhone(raw) {
   if (!raw) return false;
   const digits = raw.replace(/[\s\-\(\)\.]/g, '');
-  return /^\+33\d{9}$/.test(digits);
+  return /^\+\d{7,15}$/.test(digits);
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +68,7 @@ export async function handleInscriptionPage(request, env) {
   const count = await getConfirmedCount(env);
   const url = new URL(request.url);
   const msg = url.searchParams.get("msg") || url.searchParams.get("erreur") || "";
-  return htmlResponse(inscriptionPage(env.TURNSTILE_SITE_KEY, count, env.SUBSCRIPTION_PRICE_DISPLAY || "", msg, env.APP_BASE_URL || "", env.PAYPAL_CLIENT_ID || ""));
+  return htmlResponse(inscriptionPage(env.TURNSTILE_SITE_KEY, count, env.SUBSCRIPTION_PRICE_DISPLAY || "", msg, env.APP_BASE_URL || ""));
 }
 
 export async function handleSubscribePost(request, env) {
@@ -88,6 +89,7 @@ async function _handleSubscribePost(request, env) {
     rateCount = parseInt((await env.STATE.get(hourKey)) || "0", 10);
   } catch {}
   if (rateCount >= RATE_LIMIT_MAX) {
+    await trackEvent(env, request, 'form_error', { field: 'ratelimit' });
     return Response.redirect(new URL("/inscription?erreur=ratelimit", request.url).href, 303);
   }
   try {
@@ -98,6 +100,7 @@ async function _handleSubscribePost(request, env) {
   try {
     data = await request.formData();
   } catch {
+    await trackEvent(env, request, 'form_error', { field: 'formulaire' });
     return Response.redirect(new URL("/inscription?erreur=formulaire", request.url).href, 303);
   }
 
@@ -109,17 +112,25 @@ async function _handleSubscribePost(request, env) {
   const turnstileToken = data.get("cf-turnstile-response");
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    await trackEvent(env, request, 'form_error', { field: 'email' });
     return Response.redirect(new URL("/inscription?erreur=email", request.url).href, 303);
   }
-  if (!firstName) return Response.redirect(new URL("/inscription?erreur=prenom", request.url).href, 303);
-  if (!lastName)  return Response.redirect(new URL("/inscription?erreur=nom", request.url).href, 303);
-  if (!isValidPhone(phone)) return Response.redirect(new URL("/inscription?erreur=telephone", request.url).href, 303);
+  if (!firstName) {
+    await trackEvent(env, request, 'form_error', { field: 'prenom' });
+    return Response.redirect(new URL("/inscription?erreur=prenom", request.url).href, 303);
+  }
+  if (!lastName) {
+    await trackEvent(env, request, 'form_error', { field: 'nom' });
+    return Response.redirect(new URL("/inscription?erreur=nom", request.url).href, 303);
+  }
+  if (!isValidPhone(phone)) {
+    await trackEvent(env, request, 'form_error', { field: 'telephone' });
+    return Response.redirect(new URL("/inscription?erreur=telephone", request.url).href, 303);
+  }
 
   if (env.TURNSTILE_SECRET_KEY && turnstileToken) {
     const ok = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip);
-    if (!ok) {
-      return Response.redirect(new URL("/inscription?erreur=turnstile", request.url).href, 303);
-    }
+    if (!ok) await trackEvent(env, request, 'form_error', { field: 'turnstile' });
   }
 
   const existing = await env.DB.prepare(
@@ -128,18 +139,27 @@ async function _handleSubscribePost(request, env) {
 
   if (existing) {
     if (existing.status === "confirmed") {
+      await trackEvent(env, request, 'form_error', { field: 'duplicate' });
       return Response.redirect(
         new URL("/inscription?msg=dejainscrit", request.url).toString(), 303
       );
     }
     if (existing.status === "pending") {
+      await trackEvent(env, request, 'form_step1_success');
       const { ok } = await sendConfirmationEmail(env, email, existing.token);
       if (!ok) return Response.redirect(new URL("/inscription?erreur=email_envoi", request.url).href, 303);
       return htmlResponse(confirmEmailSentPage(email));
     }
     if (existing.status === "unsubscribed") {
-      if (env.PAYPAL_CLIENT_ID) {
-        return createPaypalCheckout(request, env, { email, phone, firstName, lastName, smsConsent, reactivate: true });
+      await trackEvent(env, request, 'form_step1_success');
+      if (env.STRIPE_SECRET_KEY) {
+        try {
+          const session = await createStripeCheckoutSession(env, { email, phone, firstName, lastName, smsConsent, reactivate: true });
+          return Response.redirect(session.url, 303);
+        } catch (err) {
+          console.error("createStripeCheckoutSession error:", String(err));
+          return Response.redirect(new URL("/inscription?erreur=paiement", request.url).href, 303);
+        }
       }
       const newToken = crypto.randomUUID();
       await env.DB.prepare(
@@ -152,8 +172,16 @@ async function _handleSubscribePost(request, env) {
     }
   }
 
-  if (env.PAYPAL_CLIENT_ID) {
-    return createPaypalCheckout(request, env, { email, phone, firstName, lastName, smsConsent, reactivate: false });
+  await trackEvent(env, request, 'form_step1_success');
+
+  if (env.STRIPE_SECRET_KEY) {
+    try {
+      const session = await createStripeCheckoutSession(env, { email, phone, firstName, lastName, smsConsent, reactivate: false });
+      return Response.redirect(session.url, 303);
+    } catch (err) {
+      console.error("createStripeCheckoutSession error:", String(err));
+      return Response.redirect(new URL("/inscription?erreur=paiement", request.url).href, 303);
+    }
   }
 
   const id    = crypto.randomUUID();
@@ -176,30 +204,33 @@ async function _handleSubscribePost(request, env) {
 // ---------------------------------------------------------------------------
 
 export async function handlePaymentReturn(request, env) {
-  const orderId = new URL(request.url).searchParams.get("token");
-  if (!orderId) return htmlResponse(messagePage("Erreur", "Paramètre manquant.", "/inscription"), 400);
+  const sessionId = new URL(request.url).searchParams.get("session_id");
+  if (!sessionId) return htmlResponse(messagePage("Erreur", "Paramètre manquant.", "/inscription"), 400);
 
   let subscriberData;
   try {
-    const raw = await env.STATE.get(`payorder:${orderId}`);
+    const raw = await env.STATE.get(`stripeorder:${sessionId}`);
     if (!raw) return htmlResponse(messagePage("Session expirée", `La session a expiré. <a href="/inscription">Recommencer →</a>`, "/inscription"), 410);
     subscriberData = JSON.parse(raw);
   } catch {
     return htmlResponse(messagePage("Erreur", "Erreur de session.", "/inscription"), 500);
   }
 
-  let captureResult;
+  let session;
   try {
-    const accessToken = await getPaypalToken(env);
-    captureResult = await capturePaypalOrder(env, orderId, accessToken);
+    session = await retrieveStripeSession(env, sessionId);
   } catch (err) {
-    console.error("PayPal capture failed:", String(err));
+    console.error("Stripe retrieve failed:", String(err));
+    await trackEvent(env, request, 'payment_error', { code: 'stripe_retrieve_exception' });
     return htmlResponse(messagePage("Paiement non confirmé", "Le paiement n'a pas pu être vérifié. Si tu as payé, contacte-nous.", "/inscription"), 402);
   }
 
-  if (captureResult.status !== "COMPLETED") {
-    return htmlResponse(messagePage("Paiement non complété", `Statut : ${captureResult.status}. Réessaie.`, "/inscription"), 402);
+  if (session.payment_status !== "paid") {
+    await trackEvent(env, request, 'payment_error', { code: session.payment_status || 'not_paid' });
+    return htmlResponse(messagePage("Paiement non complété", `Statut : ${session.payment_status}. Réessaie.`, "/inscription"), 402);
   }
+
+  await env.STATE.delete(`stripeorder:${sessionId}`).catch(() => {});
 
   const { email, phone, firstName, lastName, smsConsent, reactivate } = subscriberData;
   const now = new Date().toISOString();
@@ -214,7 +245,6 @@ export async function handlePaymentReturn(request, env) {
     } else {
       const existing = await env.DB.prepare("SELECT id, status FROM subscribers WHERE email = ?").bind(email).first();
       if (existing && existing.status === "confirmed") {
-        await env.STATE.delete(`payorder:${orderId}`).catch(() => {});
         return Response.redirect(new URL("/inscription?msg=dejainscrit", request.url).toString(), 303);
       }
       if (existing) {
@@ -230,18 +260,23 @@ export async function handlePaymentReturn(request, env) {
       }
     }
   } catch (err) {
-    console.error("DB after PayPal capture:", String(err));
+    console.error("DB insert/update failed:", String(err));
     return htmlResponse(messagePage("Erreur d'inscription", `Paiement reçu mais ton inscription a échoué. Contacte-nous avec : ${escapeHtml(email)}.`, "/"), 500);
   }
 
-  await env.STATE.delete(`payorder:${orderId}`).catch(() => {});
-
-  await sendWelcomeEmail(env, email, firstName, lastName, token);
+  let emailResult = await sendWelcomeEmail(env, email, firstName, lastName, token);
+  if (!emailResult.ok && !emailResult.skipped) {
+    console.warn(`sendWelcomeEmail retry for ${email}`);
+    emailResult = await sendWelcomeEmail(env, email, firstName, lastName, token);
+    if (!emailResult.ok) console.error(`sendWelcomeEmail definitive failure for ${email}`);
+  }
+  await trackEvent(env, request, 'payment_completed');
 
   return htmlResponse(confirmationPage(env.SUBSCRIPTION_PRICE_DISPLAY || "", env.APP_BASE_URL || ""));
 }
 
 export async function handlePaymentCancel(request, env) {
+  await trackEvent(env, request, 'payment_cancelled');
   return Response.redirect(new URL("/inscription?msg=paiement_annule", request.url).toString(), 303);
 }
 
@@ -253,7 +288,7 @@ export async function handlePaymentSuccess(request, env) {
 // Smart Payment Buttons - JSON API
 // ---------------------------------------------------------------------------
 
-export async function handleCreateOrder(request, env) {
+export async function handleCreateStripeSession(request, env) {
   try {
     const body = await request.json();
     const email = (body.email || "").trim().toLowerCase();
@@ -263,105 +298,61 @@ export async function handleCreateOrder(request, env) {
     const smsConsent = body.smsConsent ? 1 : 0;
     const turnstileToken = body.turnstileToken || "";
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      await trackEvent(env, request, 'form_error', { field: 'email' });
       return jsonApiError("email", 400);
-    if (!firstName) return jsonApiError("prenom", 400);
-    if (!lastName) return jsonApiError("nom", 400);
-    if (!isValidPhone(phone)) return jsonApiError("telephone", 400);
+    }
+    if (!firstName) {
+      await trackEvent(env, request, 'form_error', { field: 'prenom' });
+      return jsonApiError("prenom", 400);
+    }
+    if (!lastName) {
+      await trackEvent(env, request, 'form_error', { field: 'nom' });
+      return jsonApiError("nom", 400);
+    }
+    if (!isValidPhone(phone)) {
+      await trackEvent(env, request, 'form_error', { field: 'telephone' });
+      return jsonApiError("telephone", 400);
+    }
 
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
     const hourKey = `ratelimit:sub:${ip}:${new Date().toISOString().slice(0, 13)}`;
     let rateCount = 0;
     try { rateCount = parseInt((await env.STATE.get(hourKey)) || "0", 10); } catch {}
-    if (rateCount >= RATE_LIMIT_MAX) return jsonApiError("ratelimit", 429);
+    if (rateCount >= RATE_LIMIT_MAX) {
+      await trackEvent(env, request, 'form_error', { field: 'ratelimit' });
+      return jsonApiError("ratelimit", 429);
+    }
     try { await env.STATE.put(hourKey, String(rateCount + 1), { expirationTtl: RATE_LIMIT_TTL }); } catch {}
 
     if (env.TURNSTILE_SECRET_KEY && turnstileToken) {
       const ok = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip);
-      if (!ok) return jsonApiError("turnstile", 403);
+      if (!ok) await trackEvent(env, request, 'form_error', { field: 'turnstile' });
     }
 
     const existing = await env.DB.prepare(
-      "SELECT status, token FROM subscribers WHERE email = ?"
+      "SELECT status FROM subscribers WHERE email = ?"
     ).bind(email).first();
 
     if (existing && existing.status === "confirmed") {
+      await trackEvent(env, request, 'form_error', { field: 'duplicate' });
       return jsonApiError("dejainscrit", 409);
     }
 
-    const accessToken = await getPaypalToken(env);
-    const order = await createPaypalOrder(env, accessToken);
-
-    const subscriberData = {
+    const session = await createStripeCheckoutSession(env, {
       email, phone, firstName, lastName, smsConsent,
       reactivate: existing?.status === "unsubscribed",
-    };
-    await env.STATE.put(`payorder:${order.id}`, JSON.stringify(subscriberData), { expirationTtl: 3600 });
+    });
 
-    return new Response(JSON.stringify({ orderID: order.id }), {
+    await trackEvent(env, request, 'form_step1_success');
+    await trackEvent(env, request, 'payment_initiated');
+
+    return new Response(JSON.stringify({ url: session.url }), {
       headers: { "content-type": "application/json" },
     });
   } catch (err) {
-    console.error("handleCreateOrder error:", String(err), err?.stack);
+    console.error("handleCreateStripeSession error:", String(err), err?.stack);
     return jsonApiError("paiement", 500);
-  }
-}
-
-export async function handleCaptureOrder(request, env) {
-  try {
-    const { orderID } = await request.json();
-    if (!orderID) return jsonApiError("missing", 400);
-
-    const raw = await env.STATE.get(`payorder:${orderID}`);
-    if (!raw) return jsonApiError("expired", 410);
-    const subscriberData = JSON.parse(raw);
-
-    const accessToken = await getPaypalToken(env);
-    const captureResult = await capturePaypalOrder(env, orderID, accessToken);
-
-    if (captureResult.status !== "COMPLETED") {
-      return jsonApiError("not_completed", 402);
-    }
-
-    const { email, phone, firstName, lastName, smsConsent, reactivate } = subscriberData;
-    const now = new Date().toISOString();
-    const token = crypto.randomUUID();
-
-    if (reactivate) {
-      await env.DB.prepare(
-        `UPDATE subscribers SET status='confirmed', token=?, confirmed_at=?,
-         first_name=?, last_name=?, phone=?, sms_consent=? WHERE email=?`
-      ).bind(token, now, firstName, lastName, phone, smsConsent, email).run();
-    } else {
-      const existing = await env.DB.prepare("SELECT id, status FROM subscribers WHERE email = ?").bind(email).first();
-      if (existing && existing.status === "confirmed") {
-        await env.STATE.delete(`payorder:${orderID}`).catch(() => {});
-        return new Response(JSON.stringify({ success: true, redirect: "/payment-success" }), {
-          headers: { "content-type": "application/json" },
-        });
-      }
-      if (existing) {
-        await env.DB.prepare(
-          `UPDATE subscribers SET status='confirmed', token=?, confirmed_at=?,
-           first_name=?, last_name=?, phone=?, sms_consent=? WHERE email=?`
-        ).bind(token, now, firstName, lastName, phone, smsConsent, email).run();
-      } else {
-        const id = crypto.randomUUID();
-        await env.DB.prepare(
-          `INSERT INTO subscribers (id, email, phone, first_name, last_name, sms_consent, status, token, confirmed_at, created_at) VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)`
-        ).bind(id, email, phone, firstName, lastName, smsConsent, token, now, now).run();
-      }
-    }
-
-    await env.STATE.delete(`payorder:${orderID}`).catch(() => {});
-    await sendWelcomeEmail(env, email, firstName, lastName, token);
-
-    return new Response(JSON.stringify({ success: true, redirect: "/payment-success" }), {
-      headers: { "content-type": "application/json" },
-    });
-  } catch (err) {
-    console.error("handleCaptureOrder error:", String(err), err?.stack);
-    return jsonApiError("capture", 500);
   }
 }
 
@@ -392,6 +383,8 @@ export async function handleConfirm(request, env) {
   await env.DB.prepare("UPDATE subscribers SET status='confirmed', confirmed_at=? WHERE token=?")
     .bind(new Date().toISOString(), token).run();
 
+  await trackEvent(env, request, 'email_confirmed');
+
   return htmlResponse(confirmationPage(env.SUBSCRIPTION_PRICE_DISPLAY || "", env.APP_BASE_URL || ""));
 }
 
@@ -408,6 +401,8 @@ export async function handleUnsubscribe(request, env) {
 
   await env.DB.prepare("UPDATE subscribers SET status='unsubscribed' WHERE token=?")
     .bind(token).run();
+
+  await trackEvent(env, request, 'unsubscribed');
 
   return htmlResponse(
     messagePage("Désinscription confirmée", "Tu ne recevras plus d'alertes. Tu peux te réinscrire à tout moment depuis la page d'accueil.")
@@ -452,6 +447,130 @@ export async function handleAdminPage(request, env) {
   return new Response(adminPage(), {
     headers: { "content-type": "text/html; charset=utf-8" },
   });
+}
+
+export async function handleAdminAnalytics(request, env) {
+  try {
+    const url = new URL(request.url);
+    const days = Math.min(parseInt(url.searchParams.get('days') || '30', 10), 90);
+    const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+
+    const [overview, funnel, errors, attribution, trend, conv_perf, recent] = await env.DB.batch([
+      env.DB.prepare(
+        `SELECT event_name, COUNT(*) as n, COUNT(DISTINCT session_id) as uniq
+         FROM analytics_events WHERE created_at >= ?
+         GROUP BY event_name ORDER BY n DESC`
+      ).bind(since),
+
+      env.DB.prepare(
+        `SELECT 'landing' as step, 1 as ord, COUNT(DISTINCT session_id) as sessions
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=?
+         UNION ALL
+         SELECT 'inscription',2,COUNT(DISTINCT session_id)
+           FROM analytics_events WHERE event_name='page_view' AND page='/inscription' AND created_at>=?
+         UNION ALL
+         SELECT 'form_submit',3,COUNT(DISTINCT session_id)
+           FROM analytics_events WHERE event_name='form_step1_success' AND created_at>=?
+         UNION ALL
+         SELECT 'payment_init',4,COUNT(DISTINCT session_id)
+           FROM analytics_events WHERE event_name='payment_initiated' AND created_at>=?
+         UNION ALL
+         SELECT 'payment_done',5,COUNT(DISTINCT session_id)
+           FROM analytics_events WHERE event_name='payment_completed' AND created_at>=?
+         ORDER BY ord`
+      ).bind(since, since, since, since, since),
+
+      env.DB.prepare(
+        `SELECT event_name,
+                COALESCE(json_extract(metadata,'$.field'), json_extract(metadata,'$.code'), 'unknown') as detail,
+                COUNT(*) as n
+         FROM analytics_events
+         WHERE created_at>=? AND event_name IN ('form_error','payment_error')
+         GROUP BY event_name, detail ORDER BY n DESC`
+      ).bind(since),
+
+      env.DB.prepare(
+        `SELECT 'referrer' as dim, referrer_type as val, COUNT(DISTINCT session_id) as sessions
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=? GROUP BY referrer_type
+         UNION ALL
+         SELECT 'country', country, COUNT(DISTINCT session_id)
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=? GROUP BY country
+         UNION ALL
+         SELECT 'device', device, COUNT(DISTINCT session_id)
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=? GROUP BY device
+         UNION ALL
+         SELECT 'browser', browser, COUNT(DISTINCT session_id)
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=? GROUP BY browser
+         ORDER BY dim, sessions DESC`
+      ).bind(since, since, since, since),
+
+      env.DB.prepare(
+        `SELECT 'daily' as type, DATE(created_at) as key, COUNT(DISTINCT session_id) as n
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=? GROUP BY DATE(created_at)
+         UNION ALL
+         SELECT 'hourly', CAST(strftime('%H',created_at) AS TEXT), COUNT(*) as n
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=? GROUP BY strftime('%H',created_at)
+         ORDER BY type, key`
+      ).bind(since, since),
+
+      env.DB.prepare(
+        `SELECT 'source' as dim, v.referrer_type as val, v.visits, COALESCE(p.payments,0) as payments
+         FROM (
+           SELECT referrer_type, COUNT(DISTINCT session_id) as visits
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=?
+           GROUP BY referrer_type
+         ) v
+         LEFT JOIN (
+           SELECT ae1.referrer_type, COUNT(DISTINCT ae1.session_id) as payments
+           FROM analytics_events ae1
+           JOIN analytics_events ae2 ON ae1.session_id=ae2.session_id
+           WHERE ae1.event_name='page_view' AND ae1.page='/' AND ae1.created_at>=?
+             AND ae2.event_name='payment_completed' AND ae2.created_at>=?
+           GROUP BY ae1.referrer_type
+         ) p ON v.referrer_type=p.referrer_type
+         UNION ALL
+         SELECT 'device', v2.device, v2.visits, COALESCE(p2.payments,0)
+         FROM (
+           SELECT device, COUNT(DISTINCT session_id) as visits
+           FROM analytics_events WHERE event_name='page_view' AND page='/' AND created_at>=?
+           GROUP BY device
+         ) v2
+         LEFT JOIN (
+           SELECT ae1.device, COUNT(DISTINCT ae1.session_id) as payments
+           FROM analytics_events ae1
+           JOIN analytics_events ae2 ON ae1.session_id=ae2.session_id
+           WHERE ae1.event_name='page_view' AND ae1.page='/' AND ae1.created_at>=?
+             AND ae2.event_name='payment_completed' AND ae2.created_at>=?
+           GROUP BY ae1.device
+         ) p2 ON v2.device=p2.device
+         ORDER BY dim, visits DESC`
+      ).bind(since, since, since, since, since, since),
+
+      env.DB.prepare(
+        `SELECT session_id, event_name, page, metadata, country, device, browser, referrer_type, created_at
+         FROM analytics_events
+         ORDER BY created_at DESC
+         LIMIT 50`
+      ),
+    ]);
+
+    return new Response(JSON.stringify({
+      days,
+      overview:    overview.results    || [],
+      funnel:      funnel.results      || [],
+      errors:      errors.results      || [],
+      attribution: attribution.results || [],
+      trend:       trend.results       || [],
+      conv_perf:   conv_perf.results   || [],
+      recent:      recent.results      || [],
+    }, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8' } });
+  } catch (err) {
+    console.error('handleAdminAnalytics error:', err);
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

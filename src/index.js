@@ -33,9 +33,10 @@
 
 import { sendAdminNotifications, enqueueSubscriberAlert } from "./notify.js";
 import { legalPage } from "./pages/legal.js";
-import { confirmationEmailHtml, welcomeEmailHtml, alertEmailHtml } from "./pages/emails.js";
+import { confirmationEmailHtml, welcomeEmailHtml, alertEmailHtml, shareEmailHtml } from "./pages/emails.js";
 import { COMMENT_IMAGES } from "./comment-images.js";
 import { serveStaticImage } from "./static-images.js";
+import { trackEvent } from "./analytics.js";
 import {
   handleSubscribePage,
   handleInscriptionPage,
@@ -43,12 +44,12 @@ import {
   handlePaymentReturn,
   handlePaymentCancel,
   handlePaymentSuccess,
-  handleCreateOrder,
-  handleCaptureOrder,
+  handleCreateStripeSession,
   handleConfirm,
   handleUnsubscribe,
   handleAdminStats,
   handleAdminPage,
+  handleAdminAnalytics,
   processFanout,
 } from "./handlers/subscribers.js";
 
@@ -142,11 +143,28 @@ export default {
     if ((url.pathname === "/cgv" || url.pathname === "/mentions-legales") && method === "GET")
       return new Response(legalPage(), { headers: { "content-type": "text/html; charset=utf-8" } });
 
-    if (url.pathname === "/" && method === "GET")
+    if (url.pathname === "/" && method === "GET") {
+      ctx.waitUntil(trackEvent(env, request, 'page_view'));
       return handleSubscribePage(request, env);
+    }
 
-    if (url.pathname === "/inscription" && method === "GET")
+    if (url.pathname === "/inscription" && method === "GET") {
+      ctx.waitUntil(trackEvent(env, request, 'page_view'));
       return handleInscriptionPage(request, env);
+    }
+
+    // Beacon côté client : scroll depth, share clicks (fire & forget)
+    if (url.pathname === "/track" && method === "POST") {
+      ctx.waitUntil((async () => {
+        try {
+          const body = await request.json();
+          const allowed = ['scroll_depth', 'share_click', 'cta_click'];
+          if (allowed.includes(String(body.e || '')))
+            await trackEvent(env, request, body.e, { v: body.v ?? null });
+        } catch {}
+      })());
+      return new Response('ok', { status: 200, headers: { 'content-type': 'text/plain' } });
+    }
 
     if (url.pathname === "/subscribe" && method === "GET")
       return Response.redirect(new URL("/", request.url).toString(), 301);
@@ -163,11 +181,8 @@ export default {
     if (url.pathname === "/payment-success" && method === "GET")
       return handlePaymentSuccess(request, env);
 
-    if (url.pathname === "/api/create-order" && method === "POST")
-      return handleCreateOrder(request, env);
-
-    if (url.pathname === "/api/capture-order" && method === "POST")
-      return handleCaptureOrder(request, env);
+    if (url.pathname === "/api/create-stripe-session" && method === "POST")
+      return handleCreateStripeSession(request, env);
 
     if (url.pathname === "/confirm" && method === "GET")
       return handleConfirm(request, env);
@@ -181,9 +196,12 @@ export default {
     // ── Endpoints admin protégés par ADMIN_SECRET ────────────────────────────
     if (
       (url.pathname === "/admin/subscribers" ||
+        url.pathname === "/admin/analytics" ||
         url.pathname === "/check" ||
         url.pathname === "/test-notify" ||
         url.pathname === "/test-emails" ||
+        url.pathname === "/admin/test-share-email" ||
+        url.pathname === "/admin/send-share-campaign" ||
         url.pathname === "/reset") &&
       method === "GET"
     ) {
@@ -193,9 +211,55 @@ export default {
       if (url.pathname === "/admin/subscribers")
         return handleAdminStats(request, env);
 
+      if (url.pathname === "/admin/analytics")
+        return handleAdminAnalytics(request, env);
+
       if (url.pathname === "/check") {
         const result = await runCheck(env, { force: false });
         return jsonResponse(result);
+      }
+
+      if (url.pathname === "/admin/send-share-campaign") {
+        const { results: subs } = await env.DB.prepare(
+          "SELECT email, first_name, token FROM subscribers WHERE status = 'confirmed'"
+        ).all();
+        const sent = [], failed = [];
+        for (const sub of subs) {
+          const unsubUrl = `${env.APP_BASE_URL}/unsubscribe?token=${sub.token}`;
+          const r = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+            body: JSON.stringify({
+              from: env.ALERT_EMAIL_FROM,
+              to: [sub.email],
+              subject: "Vous faites partie des premiers — partagez à vos proches",
+              html: shareEmailHtml(sub.first_name || "Abonné", unsubUrl),
+            }),
+          });
+          if (r.ok) sent.push(sub.email);
+          else failed.push({ email: sub.email, error: await r.text() });
+        }
+        return jsonResponse({ ok: true, total: subs.length, sent: sent.length, failed });
+      }
+
+      if (url.pathname === "/admin/test-share-email") {
+        const to = url.searchParams.get("to");
+        const name = url.searchParams.get("name") || "Abonné";
+        if (!to) return jsonResponse({ ok: false, error: "Missing ?to= param" }, 400);
+        const token = crypto.randomUUID();
+        const unsubUrl = `${env.APP_BASE_URL}/unsubscribe?token=${token}`;
+        const r = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+          body: JSON.stringify({
+            from: env.ALERT_EMAIL_FROM,
+            to: [to],
+            subject: "Vous faites partie des premiers — partagez à vos proches",
+            html: shareEmailHtml(name, unsubUrl),
+          }),
+        });
+        if (!r.ok) return jsonResponse({ ok: false, error: await r.text() });
+        return jsonResponse({ ok: true, to, name });
       }
 
       if (url.pathname === "/test-emails") {

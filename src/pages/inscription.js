@@ -1,7 +1,7 @@
 import { escapeHtml } from "../notify.js";
 import { shareFabHtml } from "./shared.js";
 
-export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, toast = "", baseUrl = "", paypalClientId = "") {
+export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, toast = "", baseUrl = "") {
   const shareUrl = `${baseUrl}/inscription`;
   const widget = turnstileSiteKey
     ? `<div class="cf-turnstile" data-sitekey="${escapeHtml(turnstileSiteKey)}" data-appearance="always" data-size="flexible" data-error-callback="onTurnstileError" data-expired-callback="onTurnstileExpired"></div>
@@ -11,9 +11,9 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     ? `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`
     : "";
 
-  const COUNTER_THRESHOLD = 50;
-  const counter = confirmedCount >= COUNTER_THRESHOLD
-    ? `<p class="counter"><span class="counter-dot"></span>${confirmedCount} personne${confirmedCount > 1 ? "s" : ""} déjà inscrite${confirmedCount > 1 ? "s" : ""}</p>`
+  const counterRounded = Math.floor(confirmedCount / 10) * 10;
+  const counter = confirmedCount >= 1
+    ? `<p class="counter"><em class="hl-r">+${counterRounded > 0 ? counterRounded : confirmedCount} personnes déjà inscrites</em></p>`
     : "";
 
   const stepperHtml = `<div class="stepper" aria-label="Étapes de l'inscription">
@@ -93,7 +93,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
 
     .motivation{background:rgba(232,17,45,0.06);border:1px solid rgba(232,17,45,0.12);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:14px;color:#8a1025;line-height:1.65;text-align:center}
 
-    .counter{display:inline-flex;align-items:center;gap:7px;background:rgba(0,135,81,0.08);color:var(--flag-green);font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;margin-bottom:14px}
+    .counter{display:inline-flex;align-items:center;gap:7px;background:rgba(0,135,81,0.08);color:var(--flag-green);font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;margin-top:16px;margin-bottom:14px}
     .counter-dot{width:7px;height:7px;background:var(--flag-green);border-radius:50%;flex-shrink:0;animation:pulse 1.8s ease-in-out infinite}
     @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
 
@@ -110,8 +110,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     .consent-box{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:12px;background:rgba(248,246,241,0.6);border:1.5px solid rgba(27,43,60,0.08);border-radius:10px}
     .consent-box input[type=checkbox]{width:17px;height:17px;flex-shrink:0;margin-top:2px;accent-color:var(--flag-green);cursor:pointer;-webkit-appearance:auto;padding:0;border:none;background:none}
     .consent-label{font-size:12px;color:var(--muted);line-height:1.6;cursor:pointer}
-    .cf-turnstile{width:100%;margin-bottom:16px}
-    .cf-turnstile iframe{width:100% !important;max-width:100%}
+    .cf-turnstile{display:none!important}
     .btn{width:100%;padding:15px 30px;background:var(--flag-green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:background .2s,transform .12s;box-shadow:0 4px 20px rgba(0,135,81,0.25)}
     .btn:hover{background:#006640;transform:translateY(-1px)}
     .btn:active{transform:scale(.99)}
@@ -173,6 +172,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
   ${toast === "email" ? `<div class="toast" style="background:var(--flag-red)" role="alert">Adresse email invalide.</div>` : ""}
   ${toast === "prenom" ? `<div class="toast" style="background:var(--flag-red)" role="alert">Le prénom est obligatoire.</div>` : ""}
   ${toast === "nom" ? `<div class="toast" style="background:var(--flag-red)" role="alert">Le nom est obligatoire.</div>` : ""}
+
   ${toast === "telephone" ? `<div class="toast" style="background:var(--flag-red)" role="alert">Le numéro de téléphone est obligatoire.</div>` : ""}
   ${toast === "turnstile" ? `<div class="toast" style="background:var(--flag-red)" role="alert">Vérification de sécurité échouée. Réessayez.</div>` : ""}
   ${toast === "ratelimit" ? `<div class="toast" style="background:var(--flag-red)" role="alert">Trop de tentatives. Réessaie dans quelques minutes.</div>` : ""}
@@ -201,6 +201,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
           <div class="insc-top-cd-sep">:</div>
           <div class="insc-top-cd-unit"><b id="ct-s">--</b><small>sec</small></div>
         </div>
+        ${counter}
       </div>
     </div>
     <div class="insc-intro">
@@ -211,7 +212,6 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
       <div class="flag-bar"><div></div><div></div><div></div></div>
       <div class="insc-card-body">
         ${stepperHtml}
-        ${counter}
         <div class="motivation">
           <strong>En décembre 2025, les places sont parties en quelques minutes.</strong><br>Ne manquez pas la prochaine ouverture.
         </div>
@@ -236,17 +236,16 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
           </div>
           <div class="field">
             <label for="phone">Téléphone <span class="req">*</span></label>
-            <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="+33 6 12 34 56 78" inputmode="tel">
-            <p class="error-msg" data-for="phone">Format requis : +33 suivi de 9 chiffres (ex : +33 6 12 34 56 78)</p>
+            <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="+33 6 12 34 56 78 ou +229 97 00 00 00" inputmode="tel">
+            <p class="error-msg" data-for="phone">Indicatif international requis (ex : +33 6 12 34 56 78 ou +229 97 00 00 00)</p>
+            <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Utilisé uniquement pour votre alerte SMS à l'ouverture des réservations.</p>
           </div>
           <div class="consent-box">
             <input type="checkbox" id="sms_consent" name="sms_consent" value="1" checked>
             <label class="consent-label" for="sms_consent">J'accepte de recevoir une alerte par SMS en plus de l'email.</label>
           </div>
           ${widget}
-          ${paypalClientId
-            ? `<button type="button" class="btn" id="continueBtn">Continuer vers le paiement →</button>`
-            : `<button type="submit" class="btn">M'alerter dès l'ouverture →</button>`}
+          <button type="button" class="btn" id="continueBtn">Continuer vers le paiement →</button>
           <p class="privacy">Désinscription en un clic · Aucune revente de données</p>
         </form>
 
@@ -265,10 +264,13 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
               <div class="cdbar-insc-unit"><b id="ci-s">--</b><small>sec</small></div>
             </div>
           </div>
-          <p class="pay-label">Choisissez votre mode de paiement :</p>
-          <div id="paypal-buttons"></div>
-          <div id="card-fields-container"></div>
-          <div id="payError" class="form-alert" style="display:none" role="alert">
+          <p class="pay-label">Paiement sécurisé :</p>
+          <button id="stripePayBtn" class="btn" type="button" style="display:flex;align-items:center;justify-content:center;gap:10px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Payer ${escapeHtml(priceDisplay || "5,99 €")} par carte
+          </button>
+          <p style="text-align:center;font-size:11px;color:var(--muted);margin:8px 0 0">Paiement sécurisé par <strong>Stripe</strong> · Visa, Mastercard, CB</p>
+          <div id="payError" class="form-alert" style="display:none;margin-top:12px" role="alert">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#c0392b" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></svg>
             <span id="payErrorMsg">Erreur de paiement. Réessayez.</span>
           </div>
@@ -283,7 +285,6 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     <div class="footer-bar"><span class="bar-green"></span><span class="bar-yellow"></span><span class="bar-red"></span></div>
   </footer>
 ${shareFabHtml(shareUrl)}
-${paypalClientId ? `<script src="https://www.paypal.com/sdk/js?client-id=${escapeHtml(paypalClientId)}&currency=EUR&intent=capture&components=buttons,card-fields" data-page-type="product-details"></script>` : ""}
 <script>
 function onTurnstileError(){var h=document.getElementById('turnstile-hint');if(h)h.style.display='block';}
 function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if(h)h.style.display='block';}
@@ -294,7 +295,7 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
     {id:'first_name',test:function(v){return v.trim().length>0}},
     {id:'last_name',test:function(v){return v.trim().length>0}},
     {id:'email',test:function(v){return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim())}},
-    {id:'phone',test:function(v){var d=v.trim().replace(/[\\s\\-\\(\\)\\.]/g,'');return /^\\+33\\d{9}$/.test(d);}}
+    {id:'phone',test:function(v){var d=v.trim().replace(/[\\s\\-\\(\\)\\.]/g,'');return /^\\+\\d{7,15}$/.test(d);}}
   ];
   function clearError(id){
     var f=document.getElementById(id);
@@ -372,44 +373,35 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
       el.style.display='flex';
     }
 
-    if(typeof paypal!=='undefined'){
-      paypal.Buttons({
-        style:{layout:'vertical',color:'gold',shape:'rect',label:'pay',height:48},
-        createOrder:function(){
-          var data=getFormData();
-          return fetch('/api/create-order',{
-            method:'POST',
-            headers:{'content-type':'application/json'},
-            body:JSON.stringify(data)
-          }).then(function(r){return r.json()}).then(function(d){
-            if(d.error){
-              var msgs={dejainscrit:'Vous êtes déjà inscrit.',ratelimit:'Trop de tentatives. Réessayez dans quelques minutes.',turnstile:'Vérification de sécurité échouée.',paiement:'Erreur de paiement.'};
-              throw new Error(msgs[d.error]||'Erreur : '+d.error);
-            }
-            return d.orderID;
-          });
-        },
-        onApprove:function(data){
-          return fetch('/api/capture-order',{
-            method:'POST',
-            headers:{'content-type':'application/json'},
-            body:JSON.stringify({orderID:data.orderID})
-          }).then(function(r){return r.json()}).then(function(d){
-            if(d.success){
-              window.location.href=d.redirect||'/payment-success';
-            }else{
-              showPayError('Le paiement n\\'a pas pu être finalisé.');
-            }
-          });
-        },
-        onError:function(err){
-          showPayError(err&&err.message?err.message:'Erreur de paiement. Réessayez.');
-        },
-        onCancel:function(){
-          document.getElementById('payError').style.display='none';
-        }
-      }).render('#paypal-buttons');
+    var stripePayBtn=document.getElementById('stripePayBtn');
+    if(stripePayBtn){
+      stripePayBtn.addEventListener('click',function(){
+        var btn=this;
+        btn.disabled=true;
+        var origHtml=btn.innerHTML;
+        btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Redirection en cours...';
+        var data=getFormData();
+        fetch('/api/create-stripe-session',{
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body:JSON.stringify(data)
+        }).then(function(r){return r.json();}).then(function(d){
+          if(d.url){
+            window.location.href=d.url;
+          } else {
+            var msgs={dejainscrit:'Vous êtes déjà inscrit.',ratelimit:'Trop de tentatives. Réessayez.',paiement:'Erreur de paiement.'};
+            showPayError(msgs[d.error]||'Erreur de paiement.');
+            btn.disabled=false;
+            btn.innerHTML=origHtml;
+          }
+        }).catch(function(){
+          showPayError('Erreur de connexion. Réessayez.');
+          btn.disabled=false;
+          btn.innerHTML=origHtml;
+        });
+      });
     }
+
   } else {
     form.addEventListener('submit',function(e){
       if(!validateForm())e.preventDefault();

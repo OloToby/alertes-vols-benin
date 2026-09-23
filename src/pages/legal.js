@@ -180,7 +180,7 @@ export function legalPage() {
             <li><strong>Surveillance continue :</strong> le site cible est sondé automatiquement toutes les minutes, 24h/24, 7j/7, sans interruption programmée.</li>
             <li><strong>Détection multi-critères :</strong> l'ouverture est confirmée par la disparition de marqueurs textuels indiquant l'indisponibilité des réservations, croisée avec le retour en état actif (HTTP 200) des pages de réservation profondes. Un double check consécutif est effectué avant tout envoi afin d'éliminer les faux positifs.</li>
             <li><strong>Alerte email :</strong> dès la confirmation de l'ouverture, un email personnalisé est envoyé à l'adresse fournie lors de l'inscription. Cet email contient un lien direct vers le site de réservation.</li>
-            <li><strong>Alerte SMS (optionnelle) :</strong> si vous avez explicitement coché la case de consentement SMS lors de votre inscription, et si votre numéro de téléphone est au format français (<code>+33</code> suivi de 9 chiffres), un SMS d'alerte est également envoyé.</li>
+            <li><strong>Alerte SMS (optionnelle) :</strong> si vous avez explicitement coché la case de consentement SMS lors de votre inscription, un SMS d'alerte est également envoyé au numéro fourni. Les numéros internationaux sont acceptés (format <code>+indicatif numéro</code>, ex : <code>+33 6 12 34 56 78</code> ou <code>+229 97 00 00 00</code>).</li>
             <li><strong>Email de bienvenue :</strong> immédiatement après la confirmation de votre paiement, un email de bienvenue vous est adressé pour confirmer que votre alerte est bien active.</li>
           </ul>
         </div>
@@ -189,7 +189,7 @@ export function legalPage() {
           <div class="sub-section-title">Caractéristiques et limitations techniques</div>
           <ul>
             <li><strong>Notification unique par cycle :</strong> l'alerte est envoyée une seule fois par cycle d'ouverture. Alertes Vols Bénin ne procède pas à des rappels répétés.</li>
-            <li><strong>Numéros français uniquement :</strong> la validation des numéros de téléphone est limitée aux numéros français métropolitains et DOM/TOM au format international <code>+33</code>. Les numéros d'autres pays (Canada, USA, Gabon, etc.) ne sont pas acceptés à ce stade.</li>
+            <li><strong>Numéros internationaux :</strong> les numéros de téléphone de tous pays sont acceptés au format international (<code>+indicatif</code> suivi du numéro, entre 7 et 15 chiffres). Exemple : <code>+33 6 12 34 56 78</code> (France), <code>+229 97 00 00 00</code> (Bénin), <code>+1 212 555 0100</code> (USA).</li>
             <li><strong>Délai d'envoi :</strong> le délai entre la détection de l'ouverture et l'envoi effectif des notifications peut varier de quelques secondes à quelques minutes selon la charge des infrastructures d'envoi (Resend pour les emails, Twilio pour les SMS) et la file d'attente de traitement.</li>
             <li><strong>Aléa d'infrastructure :</strong> les emails peuvent être filtrés par les systèmes anti-spam de votre fournisseur de messagerie. Il est fortement recommandé d'ajouter <strong>alertesvolsbenin@gmail.com</strong> à votre carnet d'adresses dès votre inscription.</li>
           </ul>
@@ -490,8 +490,12 @@ export function legalPage() {
         <h3>Cloudflare Turnstile</h3>
         <p>Le formulaire d'inscription utilise <strong>Cloudflare Turnstile</strong>, un système de protection anti-bot qui vérifie de manière non intrusive que l'utilisateur est bien un être humain. Turnstile peut poser un cookie ou utiliser des techniques de stockage local à des fins de vérification d'intégrité uniquement. Aucune donnée personnelle identifiante n'est collectée par ce mécanisme à des fins de ciblage publicitaire.</p>
 
-        <h3>Aucun outil d'analyse ou de publicité</h3>
-        <p>Alertes Vols Bénin n'utilise aucun outil d'analyse d'audience (Google Analytics, Matomo, Hotjar, etc.) ni aucune technologie publicitaire (pixels de tracking, remarketing, etc.). Aucune donnée de navigation n'est transmise à des tiers à des fins commerciales.</p>
+        <h3>Analyse d'audience — outil interne, sans tiers</h3>
+        <p>Alertes Vols Bénin utilise un système d'analyse <strong>entièrement interne</strong>, hébergé sur notre propre infrastructure Cloudflare. Aucun outil tiers (Google Analytics, Matomo, Hotjar, Facebook Pixel, etc.) n'est utilisé.</p>
+        <p><strong>Mécanisme d'anonymisation :</strong> l'adresse IP n'est jamais stockée. Elle est combinée avec la date du jour et un sel secret quotidien, puis transformée via SHA-256 en un identifiant de session non réversible qui se réinitialise chaque jour. Il est impossible de retrouver l'adresse IP à partir de cet identifiant.</p>
+        <p><strong>Données enregistrées côté serveur :</strong> page visitée, type d'appareil (mobile/tablette/ordinateur), navigateur, pays d'origine (code ISO-2 fourni par Cloudflare, sans stockage d'IP), source de trafic (ex. : accès direct, Facebook, WhatsApp).</p>
+        <p><strong>Script léger côté navigateur :</strong> un script JavaScript minimal s'exécute sur la page d'accueil uniquement. Il enregistre, sans cookie et sans identifiant persistant : la profondeur de défilement atteinte (25 %, 50 %, 75 %, 100 %), les clics sur les boutons d'inscription, et les clics sur les boutons de partage (WhatsApp, Facebook, Copier le lien). Ces données sont transmises à notre propre serveur via une requête HTTP vers <code>/track</code> et ne sont jamais envoyées à des tiers.</p>
+        <p>Aucune donnée de navigation n'est transmise à des tiers à des fins commerciales ou publicitaires.</p>
       </div>
     </section>
 

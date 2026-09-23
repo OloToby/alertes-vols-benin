@@ -151,6 +151,39 @@ export function alertEmailHtml(personalMessage, unsubscribeUrl) {
 }
 
 // ---------------------------------------------------------------------------
+// Email 4 — Campagne partage
+// ---------------------------------------------------------------------------
+
+export function shareEmailHtml(firstName, unsubscribeUrl) {
+  const name = escapeHtml(firstName);
+  const shareUrl = "https://alertesvolsbenin.com/inscription?utm_source=whatsapp&utm_medium=referral&utm_campaign=share_sept26";
+  const waText = encodeURIComponent(
+    "Hey ! Je suis inscrit pour recevoir une alerte dès que les vols Paris-Cotonou s'ouvrent sur voyage.benin.bj. Les places partent en quelques minutes, inscris-toi aussi 👉 " + shareUrl
+  );
+
+  const banner = `
+    <div style="background:#008751;padding:28px 24px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">🙏</div>
+      <h1 style="color:#fff;margin:0;font-size:20px;font-weight:700;letter-spacing:-0.3px">Un service pour ceux qui comptent pour toi</h1>
+    </div>`;
+
+  const body = `
+    <p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">Bonjour <strong style="color:#1B2B3C">${name}</strong>,</p>
+    <p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">Tu fais partie des <strong style="color:#1B2B3C">plus de 30 premières personnes</strong> inscrites sur Alertes Vols Bénin. Merci.</p>
+    <p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">C'est grâce à des gens comme toi que ce service peut aider le plus grand nombre.</p>
+    <p style="color:#667888;line-height:1.7;margin:0 0 20px;font-size:15px">Tu as sûrement des proches, famille, amis qui cherchent aussi un vol Paris-Cotonou ou avec qui voyager. Envoie-leur le lien pour qu'ils puissent être aussi alertés et sécuriser leur place rapidement.</p>
+    <div style="text-align:center;margin:24px 0">
+      <a href="https://wa.me/?text=${waText}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;white-space:nowrap" target="_blank">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" style="vertical-align:middle;margin-right:8px;margin-bottom:2px;display:inline-block"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.522 5.83L0 24l6.347-1.505A11.951 11.951 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.028-1.387l-.36-.214-3.742.981.999-3.648-.235-.374A9.781 9.781 0 012.18 12c0-5.413 4.406-9.818 9.818-9.818 5.413 0 9.819 4.405 9.819 9.818 0 5.413-4.406 9.818-9.818 9.818z"/></svg>
+        Partager sur WhatsApp
+      </a>
+    </div>
+    <p style="color:#667888;line-height:1.7;margin:0;font-size:14px">À bientôt,<br><strong style="color:#1B2B3C">L'équipe Alertes Vols Bénin</strong></p>`;
+
+  return emailShell(banner, body, unsubscribeUrl);
+}
+
+// ---------------------------------------------------------------------------
 // Envoi email de bienvenue
 // ---------------------------------------------------------------------------
 
