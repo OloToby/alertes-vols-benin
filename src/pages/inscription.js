@@ -245,27 +245,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
             <label class="consent-label" for="sms_consent">J'accepte de recevoir une alerte par SMS en plus de l'email.</label>
           </div>
           ${widget}
-          <button type="button" class="btn" id="continueBtn">Continuer vers le paiement →</button>
-          <p class="privacy">Désinscription en un clic · Aucune revente de données</p>
-        </form>
-
-        <div id="paymentStep" style="display:none">
-          <button type="button" class="back-link" id="backBtn">← Modifier mes informations</button>
-          <div class="pay-summary" id="paySummary"></div>
-          <div class="cdbar-insc" id="cdbar-insc">
-            <p class="cdbar-insc-label">Tarif de lancement <strong>5,99€</strong> · passe à <strong>8,99€</strong> le 1ᵉʳ nov. 2026</p>
-            <div class="cdbar-insc-units">
-              <div class="cdbar-insc-unit"><b id="ci-d">--</b><small>jours</small></div>
-              <div class="cdbar-insc-sep">:</div>
-              <div class="cdbar-insc-unit"><b id="ci-h">--</b><small>heures</small></div>
-              <div class="cdbar-insc-sep">:</div>
-              <div class="cdbar-insc-unit"><b id="ci-m">--</b><small>min</small></div>
-              <div class="cdbar-insc-sep">:</div>
-              <div class="cdbar-insc-unit"><b id="ci-s">--</b><small>sec</small></div>
-            </div>
-          </div>
-          <p class="pay-label">Paiement sécurisé :</p>
-          <button id="stripePayBtn" class="btn" type="button" style="display:flex;align-items:center;justify-content:center;gap:10px">
+          <button type="button" class="btn" id="continueBtn" style="display:flex;align-items:center;justify-content:center;gap:10px">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             Payer ${escapeHtml(priceDisplay || "5,99 €")} par carte
           </button>
@@ -274,7 +254,8 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#c0392b" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></svg>
             <span id="payErrorMsg">Erreur de paiement. Réessayez.</span>
           </div>
-        </div>
+          <p class="privacy">Désinscription en un clic · Aucune revente de données</p>
+        </form>
       </div>
     </div>
   </main>
@@ -330,78 +311,51 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
   }
 
   var continueBtn=document.getElementById('continueBtn');
-  var paymentStep=document.getElementById('paymentStep');
-  var backBtn=document.getElementById('backBtn');
 
-  if(continueBtn && paymentStep){
+  function getFormData(){
+    return {
+      email:document.getElementById('email').value.trim(),
+      firstName:document.getElementById('first_name').value.trim(),
+      lastName:document.getElementById('last_name').value.trim(),
+      phone:document.getElementById('phone').value.trim(),
+      smsConsent:document.getElementById('sms_consent').checked,
+      turnstileToken:(document.querySelector('[name="cf-turnstile-response"]')||{}).value||''
+    };
+  }
+
+  function showPayError(msg){
+    var el=document.getElementById('payError');
+    document.getElementById('payErrorMsg').textContent=msg||'Erreur de paiement. Réessayez.';
+    el.style.display='flex';
+  }
+
+  if(continueBtn){
     continueBtn.addEventListener('click',function(){
       if(!validateForm())return;
-      form.style.display='none';
-      paymentStep.style.display='block';
-      var name=document.getElementById('first_name').value.trim();
-      document.getElementById('paySummary').innerHTML='<strong>'+name+'</strong>, finalisez votre inscription en payant ci-dessous.';
-      document.querySelectorAll('.stepper-step')[0].classList.remove('active');
-      document.querySelectorAll('.stepper-step')[0].classList.add('done');
-      document.querySelectorAll('.stepper-step')[0].querySelector('.stepper-num').textContent='✓';
-      document.querySelectorAll('.stepper-step')[1].classList.add('active');
-      window.scrollTo({top:0,behavior:'smooth'});
-    });
-
-    backBtn.addEventListener('click',function(){
-      paymentStep.style.display='none';
-      form.style.display='block';
-      document.querySelectorAll('.stepper-step')[0].classList.add('active');
-      document.querySelectorAll('.stepper-step')[0].classList.remove('done');
-      document.querySelectorAll('.stepper-step')[0].querySelector('.stepper-num').textContent='1';
-      document.querySelectorAll('.stepper-step')[1].classList.remove('active');
-    });
-
-    function getFormData(){
-      return {
-        email:document.getElementById('email').value.trim(),
-        firstName:document.getElementById('first_name').value.trim(),
-        lastName:document.getElementById('last_name').value.trim(),
-        phone:document.getElementById('phone').value.trim(),
-        smsConsent:document.getElementById('sms_consent').checked,
-        turnstileToken:(document.querySelector('[name="cf-turnstile-response"]')||{}).value||''
-      };
-    }
-
-    function showPayError(msg){
-      var el=document.getElementById('payError');
-      document.getElementById('payErrorMsg').textContent=msg||'Erreur de paiement. Réessayez.';
-      el.style.display='flex';
-    }
-
-    var stripePayBtn=document.getElementById('stripePayBtn');
-    if(stripePayBtn){
-      stripePayBtn.addEventListener('click',function(){
-        var btn=this;
-        btn.disabled=true;
-        var origHtml=btn.innerHTML;
-        btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Redirection en cours...';
-        var data=getFormData();
-        fetch('/api/create-stripe-session',{
-          method:'POST',
-          headers:{'content-type':'application/json'},
-          body:JSON.stringify(data)
-        }).then(function(r){return r.json();}).then(function(d){
-          if(d.url){
-            window.location.href=d.url;
-          } else {
-            var msgs={dejainscrit:'Vous êtes déjà inscrit.',ratelimit:'Trop de tentatives. Réessayez.',paiement:'Erreur de paiement.'};
-            showPayError(msgs[d.error]||'Erreur de paiement.');
-            btn.disabled=false;
-            btn.innerHTML=origHtml;
-          }
-        }).catch(function(){
-          showPayError('Erreur de connexion. Réessayez.');
+      var btn=this;
+      btn.disabled=true;
+      var origHtml=btn.innerHTML;
+      btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Redirection en cours...';
+      var data=getFormData();
+      fetch('/api/create-stripe-session',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify(data)
+      }).then(function(r){return r.json();}).then(function(d){
+        if(d.url){
+          window.location.href=d.url;
+        } else {
+          var msgs={dejainscrit:'Vous êtes déjà inscrit.',ratelimit:'Trop de tentatives. Réessayez.',paiement:'Erreur de paiement.'};
+          showPayError(msgs[d.error]||'Erreur de paiement.');
           btn.disabled=false;
           btn.innerHTML=origHtml;
-        });
+        }
+      }).catch(function(){
+        showPayError('Erreur de connexion. Réessayez.');
+        btn.disabled=false;
+        btn.innerHTML=origHtml;
       });
-    }
-
+    });
   } else {
     form.addEventListener('submit',function(e){
       if(!validateForm())e.preventDefault();
