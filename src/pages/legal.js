@@ -215,11 +215,11 @@ export function legalPage() {
 
         <h3>Modalités de paiement</h3>
         <ul>
-          <li>Le paiement est intégralement traité par <strong>PayPal</strong>, prestataire de paiement tiers. Alertes Vols Bénin ne collecte, ne stocke et n'a jamais accès à vos données de carte bancaire.</li>
+          <li>Le paiement est intégralement traité par <strong>Stripe</strong>, prestataire de paiement tiers. Alertes Vols Bénin ne collecte, ne stocke et n'a jamais accès à vos données de carte bancaire.</li>
           <li>Le paiement est exigible immédiatement à la finalisation du formulaire d'inscription, avant l'activation du Service.</li>
           <li>Le prix est affiché et débité en euros (EUR), toutes taxes comprises. Aucune taxe supplémentaire n'est appliquée par Alertes Vols Bénin.</li>
-          <li>En cas de frais de change appliqués par votre banque ou PayPal pour une transaction en devise étrangère, ceux-ci sont à votre charge et ne peuvent être imputés au Service.</li>
-          <li>L'activation de votre inscription intervient dès la confirmation du paiement par PayPal, généralement dans les secondes qui suivent la transaction.</li>
+          <li>En cas de frais de change appliqués par votre banque ou Stripe pour une transaction en devise étrangère, ceux-ci sont à votre charge et ne peuvent être imputés au Service.</li>
+          <li>L'activation de votre inscription intervient dès la confirmation du paiement par Stripe, généralement dans les secondes qui suivent la transaction.</li>
         </ul>
 
         <h3>Preuve d'achat</h3>
@@ -241,11 +241,11 @@ export function legalPage() {
         <h3>Droit de rétractation légal (14 jours)</h3>
         <p>Conformément aux articles L.221-18 et suivants du Code de la consommation, vous disposez d'un délai de <strong>14 jours calendaires</strong> à compter de la date de souscription pour exercer votre droit de rétractation, <strong>à condition que l'alerte n'ait pas encore été envoyée</strong>.</p>
         <p>Si, au cours de ce délai, le service a été pleinement exécuté (c'est-à-dire que l'alerte a été détectée et que les notifications ont été envoyées), le droit de rétractation ne peut s'exercer conformément à l'article L.221-28 du Code de la consommation relatif aux contenus numériques dont l'exécution a commencé avec l'accord préalable du consommateur.</p>
-        <p>Pour exercer votre droit de rétractation, envoyez un email à <a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a> avec l'objet « Rétractation » et en mentionnant l'adresse email utilisée lors de l'inscription. Le remboursement interviendra dans les 14 jours suivant la réception de votre demande, via le même moyen de paiement que celui utilisé lors de l'achat (PayPal).</p>
+        <p>Pour exercer votre droit de rétractation, envoyez un email à <a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a> avec l'objet « Rétractation » et en mentionnant l'adresse email utilisée lors de l'inscription. Le remboursement interviendra dans les 14 jours suivant la réception de votre demande, via le même moyen de paiement que celui utilisé lors de l'achat (Stripe).</p>
 
         <h3>Remboursement si voyage.benin.bj n'ouvre pas</h3>
         <div class="highlight">
-          <strong>Garantie de remboursement au-delà de 18 mois :</strong> Si le site voyage.benin.bj n'a pas ouvert ses réservations de vols spéciaux dans un délai de <strong>18 mois</strong> à compter de la date de votre inscription, vous êtes en droit de demander le remboursement intégral de votre paiement (5,99 €). Il vous suffit d'envoyer un email à <a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a> en mentionnant votre adresse email d'inscription. Le remboursement sera effectué via PayPal dans un délai de 14 jours ouvrés à compter de la réception de votre demande.
+          <strong>Garantie de remboursement au-delà de 18 mois :</strong> Si le site voyage.benin.bj n'a pas ouvert ses réservations de vols spéciaux dans un délai de <strong>18 mois</strong> à compter de la date de votre inscription, vous êtes en droit de demander le remboursement intégral de votre paiement (5,99 €). Il vous suffit d'envoyer un email à <a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a> en mentionnant votre adresse email d'inscription. Le remboursement sera effectué via Stripe dans un délai de 14 jours ouvrés à compter de la réception de votre demande.
         </div>
 
         <h3>Autres cas de remboursement intégral</h3>
@@ -294,7 +294,7 @@ export function legalPage() {
           <ul>
             <li>Les délais ou échecs de livraison des emails liés aux systèmes de <strong>Resend</strong> (prestataire d'envoi d'emails) ou aux filtres anti-spam des fournisseurs de messagerie des destinataires.</li>
             <li>Les délais ou échecs d'acheminement des SMS liés aux systèmes de <strong>Twilio</strong> (prestataire SMS) ou aux opérateurs de téléphonie mobile.</li>
-            <li>Toute interruption de service chez les prestataires tiers utilisés (Cloudflare, Resend, Twilio, PayPal).</li>
+            <li>Toute interruption de service chez les prestataires tiers utilisés (Cloudflare, Resend, Twilio, Stripe).</li>
           </ul>
         </div>
 
@@ -374,7 +374,7 @@ export function legalPage() {
         <div class="info-box">
           Alertes Vols Bénin ne collecte pas et n'a jamais accès aux données suivantes :
           <ul style="margin-top:10px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14.5px">
-            <li>Données de carte bancaire ou de compte bancaire (entièrement gérées par PayPal)</li>
+            <li>Données de carte bancaire ou de compte bancaire (entièrement gérées par Stripe)</li>
             <li>Données de navigation et d'historique de navigation</li>
             <li>Localisation géographique précise</li>
             <li>Données biométriques ou de santé</li>
@@ -405,10 +405,10 @@ export function legalPage() {
             <td><a href="https://www.twilio.com/en-us/legal/privacy" target="_blank" rel="noopener">twilio.com/legal/privacy</a></td>
           </tr>
           <tr>
-            <td><strong>PayPal, Inc.</strong><br>(USA/Luxembourg)</td>
+            <td><strong>Stripe, Inc.</strong><br>(USA)</td>
             <td>Traitement du paiement</td>
-            <td>Données de paiement (gérées directement par PayPal, sans intermédiation d'Alertes Vols Bénin)</td>
-            <td><a href="https://www.paypal.com/fr/legalhub/privacy-full" target="_blank" rel="noopener">paypal.com/fr/legalhub/privacy-full</a></td>
+            <td>Données de paiement (gérées directement par Stripe, sans intermédiation d'Alertes Vols Bénin)</td>
+            <td><a href="https://stripe.com/fr/privacy" target="_blank" rel="noopener">stripe.com/fr/privacy</a></td>
           </tr>
         </table>
         <p>Les sous-traitants basés aux États-Unis opèrent dans le cadre des mécanismes de transfert approuvés par la Commission européenne (clauses contractuelles types, dites Standard Contractual Clauses), garantissant un niveau de protection adéquat pour vos données personnelles.</p>

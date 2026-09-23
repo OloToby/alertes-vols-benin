@@ -4,7 +4,7 @@ import { subscribePage } from "../pages/landing.js";
 import { inscriptionPage } from "../pages/inscription.js";
 import { adminPage } from "../pages/admin.js";
 import { confirmEmailSentPage, messagePage, confirmationPage } from "../pages/simple-pages.js";
-import { alertEmailHtml, confirmationEmailHtml, welcomeEmailHtml, sendWelcomeEmail } from "../pages/emails.js";
+import { alertEmailHtml, confirmationEmailHtml, sendWelcomeEmail } from "../pages/emails.js";
 import { trackEvent } from "../analytics.js";
 
 const RATE_LIMIT_MAX = 10;
@@ -280,9 +280,6 @@ export async function handlePaymentCancel(request, env) {
   return Response.redirect(new URL("/inscription?msg=paiement_annule", request.url).toString(), 303);
 }
 
-export async function handlePaymentSuccess(request, env) {
-  return htmlResponse(confirmationPage(env.SUBSCRIPTION_PRICE_DISPLAY || "", env.APP_BASE_URL || ""));
-}
 
 // ---------------------------------------------------------------------------
 // Smart Payment Buttons - JSON API

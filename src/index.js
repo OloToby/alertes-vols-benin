@@ -28,7 +28,6 @@
  *   HIGH_ALERT_TTL_DAYS        -> durée en jours du mode haute vigilance (défaut: 30)
  *   SILENCE_WARN_DAYS          -> jours sans changement d'état + signal externe → alerte (défaut: 14)
  *   SUBSCRIPTION_PRICE_DISPLAY -> texte du prix affiché (ex: "3,99 €")
- *   PAYPAL_MODE                -> "sandbox" ou "live"
  */
 
 import { sendAdminNotifications, enqueueSubscriberAlert } from "./notify.js";
@@ -43,7 +42,6 @@ import {
   handleSubscribePost,
   handlePaymentReturn,
   handlePaymentCancel,
-  handlePaymentSuccess,
   handleCreateStripeSession,
   handleConfirm,
   handleUnsubscribe,
@@ -177,9 +175,6 @@ export default {
 
     if (url.pathname === "/payment-cancel" && method === "GET")
       return handlePaymentCancel(request, env);
-
-    if (url.pathname === "/payment-success" && method === "GET")
-      return handlePaymentSuccess(request, env);
 
     if (url.pathname === "/api/create-stripe-session" && method === "POST")
       return handleCreateStripeSession(request, env);
@@ -1269,8 +1264,9 @@ async function sha256(text) {
     .join("");
 }
 
-function jsonResponse(obj) {
+function jsonResponse(obj, status = 200) {
   return new Response(JSON.stringify(obj, null, 2), {
+    status,
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }

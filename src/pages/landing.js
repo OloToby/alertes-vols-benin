@@ -364,14 +364,14 @@ body{font-family:var(--font-body);color:var(--deep);overflow-x:hidden;max-width:
         <span class="${statusDotClass}"></span>
         ${escapeHtml(statusText)}
       </div>
-      <p class="trust-prose">Surveillance automatique. Paiement sécurisé par PayPal.</p>
+      <p class="trust-prose">Surveillance automatique. Paiement sécurisé par Stripe.</p>
       <a href="/inscription" class="cta-main">
         M’alerter dès l’ouverture
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
       </a>
-      <p class="cta-sub">Email + SMS dès l’ouverture<br>Pas de vente de billets<br>Paiement sécurisé PayPal</p>
+      <p class="cta-sub">Email + SMS dès l’ouverture<br>Pas de vente de billets<br>Paiement sécurisé Stripe</p>
     </div>
 
   </div>
@@ -458,7 +458,7 @@ body{font-family:var(--font-body);color:var(--deep);overflow-x:hidden;max-width:
         <span class="faq-n">03</span>
         <div class="faq-content">
           <h4>C'est sécurisé ?</h4>
-          <p>Le paiement est traité par PayPal. Nous ne stockons aucune coordonnée bancaire. Votre email et numéro de téléphone sont utilisés uniquement pour vous envoyer l'alerte.</p>
+          <p>Le paiement est traité par Stripe. Nous ne stockons aucune coordonnée bancaire. Votre email et numéro de téléphone sont utilisés uniquement pour vous envoyer l'alerte.</p>
         </div>
       </div>
       <div class="faq-item">

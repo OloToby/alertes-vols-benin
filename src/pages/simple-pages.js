@@ -13,35 +13,6 @@ export function confirmEmailSentPage(email) {
   );
 }
 
-export function paymentInstructionsPage(email, paypalUrl, priceDisplay) {
-  return pageShell(
-    "Finaliser votre inscription",
-    `<div>
-      <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:44px;margin-bottom:12px">💳</div>
-        <h2>Plus qu'une étape !</h2>
-        <p class="msg" style="margin-top:10px">Votre formulaire a été reçu pour<br><strong>${escapeHtml(email)}</strong></p>
-      </div>
-      <div style="display:flex;flex-direction:column;margin-bottom:20px;border:1.5px solid rgba(27,43,60,0.12);border-radius:12px;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#F8F6F1">
-          <div style="width:26px;height:26px;border-radius:50%;background:#008751;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-          <div style="flex:1">
-            <p style="font-size:13px;font-weight:600;color:#1B2B3C;margin-bottom:6px">Payez votre inscription${priceDisplay ? " · " + escapeHtml(priceDisplay) : ""}</p>
-            <a href="${escapeHtml(paypalUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#0070BA;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none">Payer via PayPal →</a>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 16px;background:#F8F6F1;border-top:1px solid rgba(27,43,60,0.08)">
-          <div style="width:26px;height:26px;border-radius:50%;background:#008751;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">2</div>
-          <div style="flex:1">
-            <p style="font-size:13px;font-weight:600;color:#1B2B3C;margin-bottom:4px">Confirmez votre email</p>
-            <p style="font-size:13px;color:#667888;line-height:1.6">Un email a été envoyé à <strong style="color:#1B2B3C">${escapeHtml(email)}</strong>. Cliquez sur le lien pour activer votre alerte.</p>
-          </div>
-        </div>
-      </div>
-      <p class="msg" style="font-size:12px;text-align:center">Une fois les deux étapes complétées, vous recevrez une alerte dès l'ouverture des vols.</p>
-    </div>`
-  );
-}
 
 export function messagePage(heading, body, backUrl = "/") {
   return pageShell(

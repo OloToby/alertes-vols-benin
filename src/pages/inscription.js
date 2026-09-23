@@ -135,8 +135,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     .pay-summary{font-size:15px;color:var(--deep);line-height:1.6;margin-bottom:16px;padding:14px;background:rgba(0,135,81,0.06);border:1px solid rgba(0,135,81,0.12);border-radius:10px}
     .pay-summary strong{color:var(--flag-green)}
     .pay-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
-    #paypal-buttons{margin-bottom:12px;min-height:50px}
-    .insc-top-cd{padding:clamp(36px,7vw,80px) clamp(8px,2vw,48px);text-align:center;display:flex;justify-content:center}
+.insc-top-cd{padding:clamp(36px,7vw,80px) clamp(8px,2vw,48px);text-align:center;display:flex;justify-content:center}
     .insc-top-cd-inner{display:flex;flex-direction:column;align-items:center}
     .insc-top-cd-units{display:flex;align-items:flex-start;gap:clamp(4px,1.5vw,16px)}
     .insc-top-cd-unit{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:clamp(56px,14vw,120px);background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);border-radius:16px;padding:clamp(10px,3vw,22px) 6px}
@@ -144,14 +143,6 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     .insc-top-cd-unit small{font-size:clamp(11px,2.5vw,17px);color:rgba(255,255,255,0.40);text-transform:uppercase;letter-spacing:0.08em;font-weight:700}
     .insc-top-cd-sep{font-family:var(--font-display);font-size:clamp(30px,7vw,67px);font-weight:700;color:rgba(255,255,255,0.20);padding-top:clamp(10px,3vw,22px);line-height:1}
     .hl-r{background:#ff2d2d;color:#fff!important;border-radius:4px;padding:1px 6px}
-    .cdbar-insc{display:flex;flex-direction:column;gap:8px;background:rgba(0,135,81,0.06);border:1px solid rgba(0,135,81,0.18);border-radius:12px;padding:13px 16px;margin-bottom:18px}
-    .cdbar-insc-label{font-size:12.5px;color:var(--muted);line-height:1.4}
-    .cdbar-insc-label strong{color:var(--flag-green)}
-    .cdbar-insc-units{display:flex;align-items:center;gap:5px}
-    .cdbar-insc-unit{display:flex;flex-direction:column;align-items:center;min-width:44px;background:#fff;border:1px solid rgba(0,135,81,0.15);border-radius:7px;padding:7px 4px}
-    .cdbar-insc-unit b{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;color:var(--deep);line-height:1;font-variant-numeric:tabular-nums}
-    .cdbar-insc-unit small{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px}
-    .cdbar-insc-sep{font-size:16px;font-weight:700;color:var(--muted);padding-bottom:8px}
 
     @media(max-width:480px){
       .row{grid-template-columns:1fr}
@@ -361,23 +352,6 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
       if(!validateForm())e.preventDefault();
     });
   }
-})();
-</script>
-<script>
-(function(){
-  var D=new Date('2026-11-01T00:00:00+01:00').getTime();
-  var el=document.getElementById('cdbar-insc');
-  if(!el)return;
-  function pad(n){return String(n).padStart(2,'0');}
-  function tick(){
-    var r=D-Date.now();
-    if(r<=0){el.style.display='none';return;}
-    document.getElementById('ci-d').textContent=Math.floor(r/864e5);
-    document.getElementById('ci-h').textContent=pad(Math.floor(r%864e5/36e5));
-    document.getElementById('ci-m').textContent=pad(Math.floor(r%36e5/6e4));
-    document.getElementById('ci-s').textContent=pad(Math.floor(r%6e4/1e3));
-  }
-  tick();setInterval(tick,1000);
 })();
 </script>
 <script>
