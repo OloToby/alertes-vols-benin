@@ -55,10 +55,6 @@ SUBSCRIPTION_PRICE_DISPLAY = "5,99 €"
 # Montant numérique envoyé à l'API PayPal (ex: "10.00")
 SUBSCRIPTION_PRICE_AMOUNT = "5.99"
 
-# Mode PayPal : "sandbox" pour les tests, "live" pour la production
-# Secrets requis : PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET (wrangler secret put)
-PAYPAL_MODE = "live"
-
 # ── Résilience & haute vigilance (tâches 1-5) ──────────────────────────────
 
 # Tâche 1 — Jours consécutifs sans changement de hash avant alerte "monitoring potentiellement aveugle"
