@@ -49,7 +49,7 @@ TURNSTILE_SITE_KEY = ""
 
 # Routes profondes à sonder (HEAD) pour la cross-confirmation
 # Si le site utilise d'autres chemins, modifier ici sans redéployer le code
-DEEP_ROUTES = "/booking,/vols,/conditions-generales,/reservations,/reservation,/reserver,/flights,/book"
+DEEP_ROUTES = "/booking,/vols,/conditions-generales,/reservations,/reservation,/reserver,/flights,/book,/flight,/vol,/billets,/billet,/reserver-vol,/acheter,/achat,/reserve"
 
 # URL du flux RSS pour la veille gouvernementale (Google News par défaut)
 # Assumption : les annonces pertinentes contiennent "vols spéciaux", "affrètement", "Bénin Tours"

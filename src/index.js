@@ -800,12 +800,18 @@ async function runCheck(env, { force }) {
         newState = "watching";
         action = "pre_open_lost";
       } else if (previousState !== "watching" && previousState !== "open_notified") {
+        const routeDetail = deepRoutes
+          .map(r => `${r}: ${routeResults[r]?.status ?? 'err'}`)
+          .join(" | ");
         notifyResults.push(
           await sendAdminNotifications(env, {
-            title: "👁️ Bénin | marqueur absent, routes 404",
+            title: "👁️ Bénin | MARQUEUR DISPARU — vérifier maintenant",
             message:
-              `Le marqueur placeholder a disparu mais /booking, /vols, /conditions-generales ` +
-              `sont toujours en 404. Possible redesign sans ouverture. ${env.TARGET_URL}`,
+              `Le marqueur "bientôt disponible" a disparu de ${env.TARGET_URL}.\n\n` +
+              `Routes sondées :\n${routeDetail}\n\n` +
+              `Aucune route connue n'est en 200. Le site a peut-être ouvert sur une route inconnue.\n` +
+              `→ Vérifier manuellement : ${env.TARGET_URL}\n` +
+              `→ Si ouvert : POST /admin/high-alert pour déclencher le fan-out au prochain check.`,
           })
         );
         newState = "watching";
