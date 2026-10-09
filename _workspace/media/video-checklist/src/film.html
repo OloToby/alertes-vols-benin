@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Alertes Vols Bénin — Checklist</title>
+<!--
+  CONTRAT DE RENDU :
+  - window.DURATION  : durée en secondes (15)
+  - window.seek(t)   : pure, sans état entre frames
+  - window.__ready   : true quand polices chargées
+  - ?w=1080&h=1920   · ?guides=1 · ?render=1
+-->
+<style>
+  @font-face { font-family:"Sora"; src:url(fonts/sora-latin.woff2) format("woff2"); font-weight:100 900; unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family:"Sora"; src:url(fonts/sora-latin-ext.woff2) format("woff2"); font-weight:100 900; unicode-range:U+0100-024F,U+0259,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family:"Inter"; src:url(fonts/inter-latin.woff2) format("woff2"); font-weight:100 900; unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family:"Inter"; src:url(fonts/inter-latin-ext.woff2) format("woff2"); font-weight:100 900; unicode-range:U+0100-024F,U+0259,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+
+  :root {
+    --white:#ffffff; --deep:#1B2B3C; --green:#008751;
+    --yellow:#FCD116; --red:#E8112D; --muted:#667888;
+  }
+  html,body { margin:0; background:#fff; overflow:hidden; }
+  #stage { position:relative; overflow:hidden; background:#fff;
+           font-family:"Inter",system-ui,sans-serif;
+           -webkit-font-smoothing:antialiased; }
+  #stage * { will-change:auto; }
+  .panel { position:absolute; top:0; left:0; overflow:hidden; }
+  .guides { position:absolute; inset:0; pointer-events:none; display:none; }
+  .guides div { position:absolute; background:rgba(255,0,80,.18); outline:1px dashed rgba(255,0,80,.6); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="world" style="position:absolute;inset:0"></div>
+  <div class="guides" id="guides"></div>
+</div>
+
+<script src="motion-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FORMAT & CONFIG
+// ═══════════════════════════════════════════════════════════════
+const q  = new URLSearchParams(location.search);
+const W  = +q.get('w') || 1080;
+const H  = +q.get('h') || 1920;
+const S  = W / 1080;  // scale factor
+const stage = document.getElementById('stage');
+stage.style.width  = W + 'px';
+stage.style.height = H + 'px';
+const FORMAT = W < H ? 'vertical' : W > H ? 'landscape' : 'square';
+
+window.DURATION = 15;
+const BPM  = 120;
+const BEAT = 60 / BPM; // 0.5 s
+
+// Safe zone (TikTok 9:16)
+const SZ = { top: H * .08, bot: H * .22, right: W * .12 };
+const PAD_L = 72 * S;
+const PAD_R = (SZ.right + 24 * S);
+const SAFE_W = W - PAD_L - PAD_R;
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const mk = (tag, id, style={}) => {
+  const e = document.createElement(tag);
+  if (id) e.id = id;
+  Object.assign(e.style, style);
+  return e;
+};
+const div = (id, style, parent) => {
+  const e = mk('div', id, style);
+  (parent || world).appendChild(e);
+  return e;
+};
+const css = (e, s) => Object.assign(e.style, s);
+const lerp = (a,b,t) => a + (b-a)*t;
+const clamp = (x,a=0,b=1) => Math.min(b, Math.max(a, x));
+const world = document.getElementById('world');
+
+// Spring shorthand (position 0→1)
+const sp  = (t, t0, r=0.4, d=0.86) => clamp(MK.spring(t - t0, r, d));
+const spv = (t, t0, r=0.4, d=0.86, from=0, to=1) => lerp(from, to, sp(t,t0,r,d));
+
+// ═══════════════════════════════════════════════════════════════
+// BRAND SVGs — DOCUMENTS / OBJETS
+// ═══════════════════════════════════════════════════════════════
+
+/* Passeport navy */
+const SVG_PASSPORT = `
+<svg viewBox="0 0 240 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ppGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#243A50"/>
+      <stop offset="100%" stop-color="#1B2B3C"/>
+    </linearGradient>
+  </defs>
+  <!-- Couverture -->
+  <rect x="4" y="4" width="232" height="312" rx="14" fill="url(#ppGrad)"/>
+  <!-- Spine -->
+  <rect x="4" y="4" width="36" height="312" rx="14" fill="#14212F"/>
+  <rect x="30" y="4" width="12" height="312" fill="#14212F"/>
+  <!-- Dorures -->
+  <rect x="50" y="24" width="130" height="3" rx="1.5" fill="rgba(252,209,22,0.5)"/>
+  <rect x="50" y="34" width="80" height="3" rx="1.5" fill="rgba(252,209,22,0.3)"/>
+  <!-- Titre PASSEPORT -->
+  <text x="120" y="68" text-anchor="middle" font-family="Sora,sans-serif" font-size="13" font-weight="700" fill="rgba(255,255,255,0.45)" letter-spacing="3">PASSEPORT</text>
+  <!-- Drapeau béninois chip -->
+  <g transform="translate(78,90)">
+    <rect width="84" height="28" rx="4" fill="none"/>
+    <rect width="24" height="28" rx="4" fill="#008751"/>
+    <rect x="24" width="60" height="14" fill="#FCD116"/>
+    <rect x="24" y="14" width="60" height="14" rx="4" fill="#E8112D"/>
+  </g>
+  <!-- Portrait stylisé -->
+  <circle cx="120" cy="175" r="38" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <ellipse cx="120" cy="162" rx="22" ry="24" fill="rgba(255,255,255,0.10)"/>
+  <path d="M88,215 Q88,195 120,195 Q152,195 152,215" fill="rgba(255,255,255,0.08)"/>
+  <!-- Lignes MRZ -->
+  <rect x="42" y="264" width="156" height="4" rx="2" fill="rgba(255,255,255,0.18)"/>
+  <rect x="42" y="274" width="140" height="4" rx="2" fill="rgba(255,255,255,0.12)"/>
+  <rect x="42" y="284" width="150" height="4" rx="2" fill="rgba(255,255,255,0.10)"/>
+  <!-- Chip doré biométrique -->
+  <rect x="102" y="232" width="36" height="26" rx="5" fill="rgba(252,209,22,0.35)" stroke="rgba(252,209,22,0.5)" stroke-width="1"/>
+  <rect x="108" y="237" width="24" height="16" rx="2" fill="rgba(252,209,22,0.2)"/>
+</svg>`;
+
+/* Téléphone avec evisa.bj */
+const SVG_PHONE = `
+<svg viewBox="0 0 200 360" xmlns="http://www.w3.org/2000/svg">
+  <!-- Corps téléphone -->
+  <rect x="10" y="8" width="180" height="344" rx="32" fill="#0B1824"/>
+  <rect x="10" y="8" width="180" height="344" rx="32" fill="none" stroke="#243A50" stroke-width="2.5"/>
+  <!-- Encoche dynamique -->
+  <rect x="72" y="18" width="56" height="18" rx="9" fill="#050D14"/>
+  <!-- Écran -->
+  <rect x="18" y="44" width="164" height="288" rx="20" fill="#F8F7F5"/>
+  <!-- Barre d'adresse -->
+  <rect x="26" y="52" width="148" height="24" rx="7" fill="#EDEDEC"/>
+  <text x="100" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#667888" font-weight="600">evisa.bj</text>
+  <!-- Badge e-VISA vert -->
+  <rect id="visaBadge" x="30" y="84" width="140" height="80" rx="12" fill="#008751"/>
+  <text x="100" y="122" text-anchor="middle" font-family="Sora,sans-serif" font-size="20" font-weight="700" fill="white" letter-spacing="1">e-VISA</text>
+  <text x="100" y="140" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="rgba(255,255,255,0.75)">BÉNIN · ENTRÉE VALIDE</text>
+  <!-- Contenu écran -->
+  <rect x="30" y="176" width="100" height="8" rx="4" fill="#EDEDEC"/>
+  <rect x="30" y="192" width="130" height="8" rx="4" fill="#EDEDEC"/>
+  <rect x="30" y="208" width="88" height="8" rx="4" fill="#EDEDEC"/>
+  <rect x="30" y="224" width="115" height="8" rx="4" fill="#EDEDEC"/>
+  <!-- Bouton "Faire ma demande" -->
+  <rect x="30" y="248" width="140" height="36" rx="10" fill="#008751"/>
+  <text x="100" y="271" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" font-weight="600" fill="white">Faire ma demande →</text>
+  <!-- Home indicator -->
+  <rect x="76" y="320" width="48" height="5" rx="2.5" fill="#C0BFBC"/>
+</svg>`;
+
+/* Carnet jaune de vaccination */
+const SVG_CARNET = `
+<svg viewBox="0 0 260 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFD800"/>
+      <stop offset="100%" stop-color="#E6BC00"/>
+    </linearGradient>
+  </defs>
+  <!-- Corps carnet -->
+  <rect x="4" y="4" width="252" height="312" rx="10" fill="url(#cGrad)"/>
+  <!-- Spine -->
+  <rect x="4" y="4" width="32" height="312" rx="10" fill="rgba(0,0,0,0.12)"/>
+  <!-- Titre international -->
+  <text x="150" y="38" text-anchor="middle" font-family="Sora,sans-serif" font-size="10" font-weight="700" fill="rgba(0,0,0,0.35)" letter-spacing="2">CERTIFICAT</text>
+  <text x="150" y="52" text-anchor="middle" font-family="Sora,sans-serif" font-size="10" font-weight="700" fill="rgba(0,0,0,0.35)" letter-spacing="2">INTERNATIONAL</text>
+  <text x="150" y="66" text-anchor="middle" font-family="Sora,sans-serif" font-size="10" font-weight="700" fill="rgba(0,0,0,0.35)" letter-spacing="2">DE VACCINATION</text>
+  <!-- Logo OMS stylisé -->
+  <circle cx="150" cy="100" r="28" fill="rgba(0,0,0,0.07)" stroke="rgba(0,0,0,0.12)" stroke-width="1.5"/>
+  <circle cx="150" cy="100" r="18" fill="rgba(0,0,0,0.05)"/>
+  <line x1="122" y1="100" x2="178" y2="100" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="150" y1="72" x2="150" y2="128" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <!-- Zone vaccin -->
+  <rect x="46" y="146" width="200" height="72" rx="8" fill="rgba(255,255,255,0.55)"/>
+  <text x="56" y="168" font-family="Inter,sans-serif" font-size="9" font-weight="600" fill="rgba(0,0,0,0.4)" letter-spacing="1.5">VACCIN</text>
+  <text x="56" y="188" font-family="Sora,sans-serif" font-size="14" font-weight="700" fill="rgba(0,0,0,0.65)">Fièvre jaune</text>
+  <text x="56" y="204" font-family="Inter,sans-serif" font-size="9" fill="rgba(0,0,0,0.4)">Yellow Fever · Fiebre amarilla</text>
+  <!-- Ligne date/cachet -->
+  <line x1="46" y1="234" x2="246" y2="234" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+  <text x="56" y="250" font-family="Inter,sans-serif" font-size="8" fill="rgba(0,0,0,0.3)">Date :</text>
+  <line x1="82" y1="250" x2="180" y2="250" stroke="rgba(0,0,0,0.15)" stroke-width="0.8"/>
+  <text x="56" y="270" font-family="Inter,sans-serif" font-size="8" fill="rgba(0,0,0,0.3)">Cachet :</text>
+  <rect x="82" y="257" width="164" height="24" rx="4" fill="rgba(0,0,0,0.04)"/>
+</svg>`;
+
+/* Capsule médicale (paludisme) */
+const SVG_PILL = `
+<svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond cercle doux -->
+  <circle cx="140" cy="140" r="120" fill="rgba(0,135,81,0.06)"/>
+  <!-- Capsule horizontale -->
+  <rect x="20" y="105" width="240" height="70" rx="35" fill="rgba(0,135,81,0.12)"/>
+  <!-- Moitié gauche (vide / blanc) -->
+  <path d="M55,105 H140 V175 H55 Q20,175 20,140 Q20,105 55,105 Z" fill="white" stroke="rgba(0,135,81,0.6)" stroke-width="3.5"/>
+  <!-- Moitié droite (verte) -->
+  <path d="M140,105 H225 Q260,105 260,140 Q260,175 225,175 H140 Z" fill="#008751"/>
+  <!-- Traits du milieu -->
+  <line x1="140" y1="105" x2="140" y2="175" stroke="rgba(0,135,81,0.4)" stroke-width="3"/>
+  <!-- Croix médicale (en haut centré) -->
+  <rect x="115" y="30" width="30" height="80" rx="6" fill="#E8112D" opacity="0.85"/>
+  <rect x="90" y="55" width="80" height="30" rx="6" fill="#E8112D" opacity="0.85"/>
+  <!-- Texte capsule -->
+  <text x="172" y="148" text-anchor="middle" font-family="Sora,sans-serif" font-size="11" font-weight="700" fill="white" letter-spacing="0.5">MALARIA</text>
+  <!-- Feuille déco (paludisme = nature) -->
+  <path d="M226,218 Q244,200 252,215 Q264,235 246,240 Q232,244 226,218 Z" fill="rgba(0,135,81,0.3)"/>
+  <line x1="228" y1="218" x2="250" y2="238" stroke="rgba(0,135,81,0.4)" stroke-width="1.5"/>
+</svg>`;
+
+/* Bouclier assurance */
+const SVG_SHIELD = `
+<svg viewBox="0 0 260 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#243A50"/>
+      <stop offset="100%" stop-color="#1B2B3C"/>
+    </linearGradient>
+  </defs>
+  <!-- Ombre portée -->
+  <path d="M130,18 L228,52 L228,140 Q228,220 130,285 Q32,220 32,140 L32,52 Z" fill="rgba(27,43,60,0.15)" transform="translate(5,8)"/>
+  <!-- Corps shield -->
+  <path d="M130,14 L222,48 L222,140 Q222,216 130,278 Q38,216 38,140 L38,48 Z" fill="url(#shGrad)"/>
+  <!-- Reflet interne -->
+  <path d="M130,28 L208,58 L208,140 Q208,205 130,258 Q60,205 60,140 L60,58 Z" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <!-- Croix médicale / protection -->
+  <rect x="110" y="90" width="40" height="110" rx="7" fill="white" opacity="0.92"/>
+  <rect x="80" y="120" width="100" height="40" rx="7" fill="white" opacity="0.92"/>
+  <!-- Liseré coloré bas du shield -->
+  <path d="M130,275 Q80,245 56,210 L204,210 Q180,245 130,275 Z" fill="rgba(0,135,81,0.25)"/>
+</svg>`;
+
+/* Boarding pass retour */
+const SVG_TICKET = `
+<svg viewBox="0 0 340 180" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond carte -->
+  <rect x="4" y="4" width="332" height="172" rx="14" fill="white" stroke="#E0E0E0" stroke-width="1.5"/>
+  <!-- Section gauche rouge -->
+  <rect x="4" y="4" width="106" height="172" rx="14" fill="#E8112D"/>
+  <rect x="86" y="4" width="28" height="172" fill="#E8112D"/>
+  <!-- Perforations -->
+  <circle cx="114" cy="46" r="16" fill="white"/>
+  <circle cx="114" cy="134" r="16" fill="white"/>
+  <line x1="114" y1="62" x2="114" y2="118" stroke="white" stroke-width="2" stroke-dasharray="5 4"/>
+  <!-- CDG text -->
+  <text x="55" y="76" text-anchor="middle" font-family="Sora,sans-serif" font-size="19" font-weight="700" fill="white" letter-spacing="-0.5">CDG</text>
+  <text x="55" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="rgba(255,255,255,0.65)" letter-spacing="1.5">PARIS</text>
+  <!-- Flèche retour -->
+  <text x="55" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="rgba(255,255,255,0.9)">⇆</text>
+  <text x="55" y="135" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="rgba(255,255,255,0.65)" letter-spacing="1.5">COO</text>
+  <!-- Section droite -->
+  <text x="228" y="40" text-anchor="middle" font-family="Sora,sans-serif" font-size="12" font-weight="700" fill="#1B2B3C" letter-spacing="-0.2">BILLET RETOUR</text>
+  <line x1="136" y1="52" x2="328" y2="52" stroke="#EBEBEB" stroke-width="1"/>
+  <!-- Vols -->
+  <text x="148" y="76" font-family="Inter,sans-serif" font-size="10" fill="#667888" font-weight="600">RETOUR</text>
+  <text x="228" y="76" text-anchor="middle" font-family="Sora,sans-serif" font-size="12" font-weight="700" fill="#1B2B3C">COO → CDG</text>
+  <text x="148" y="96" font-family="Inter,sans-serif" font-size="9" fill="#667888">VOLS SPÉCIAUX</text>
+  <rect x="136" y="108" width="184" height="28" rx="5" fill="#F5F5F5"/>
+  <text x="228" y="126" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#667888">Requis à l'entrée sur le territoire</text>
+  <!-- Code-barres stylisé -->
+  <g transform="translate(148,145)">
+    <rect width="3" height="14" rx="0.5" fill="#1B2B3C" opacity="0.3"/>
+    <rect x="5" width="2" height="14" rx="0.5" fill="#1B2B3C" opacity="0.5"/>
+    <rect x="9" width="4" height="14" rx="0.5" fill="#1B2B3C" opacity="0.4"/>
+    <rect x="15" width="2" height="14" rx="0.5" fill="#1B2B3C" opacity="0.6"/>
+    <rect x="19" width="3" height="14" rx="0.5" fill="#1B2B3C" opacity="0.3"/>
+    <rect x="24" width="2" height="14" rx="0.5" fill="#1B2B3C" opacity="0.5"/>
+    <rect x="28" width="4" height="14" rx="0.5" fill="#1B2B3C" opacity="0.4"/>
+    <rect x="34" width="2" height="14" rx="0.5" fill="#1B2B3C" opacity="0.3"/>
+    <rect x="38" width="3" height="14" rx="0.5" fill="#1B2B3C" opacity="0.5"/>
+  </g>
+</svg>`;
+
+// Logo AVB (icon only, compact)
+const SVG_LOGO = `
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="96" fill="#008751"/>
+  <g transform="translate(256,246)">
+    <path d="M0,-120 C8,-116 14,-104 14,-88 L14,-40 L120,-16 L120,8 L14,24 L14,72 L56,100 L56,116 L0,92 L-56,116 L-56,100 L-14,72 L-14,24 L-120,8 L-120,-16 L-14,-40 L-14,-88 C-14,-104 -8,-116 0,-120 Z"
+          fill="white" fill-opacity="0.95"/>
+  </g>
+</svg>`;
+
+// ═══════════════════════════════════════════════════════════════
+// ITEMS DATA
+// ═══════════════════════════════════════════════════════════════
+const ITEMS = [
+  { num:'01', title:'Passeport',       titleSize: 120*S,
+    detail:'Valide 6 mois après le retour',
+    sub:'Béninois ? → Renouvelez sur ePass.bj',
+    svg: SVG_PASSPORT, accent:'#1B2B3C', checkColor:'#008751', hasStamp:false },
+  { num:'02', title:'e-Visa',          titleSize: 130*S,
+    detail:'Si passeport français',
+    sub:'→ Demande sur evisa.bj',
+    svg: SVG_PHONE, accent:'#008751', checkColor:'#008751', hasStamp:false },
+  { num:'03', title:'Vaccin',          titleSize: 130*S,
+    detail:'Fièvre jaune',
+    sub:'Carnet de vaccination requis',
+    svg: SVG_CARNET, accent:'#E8112D', checkColor:'#E8112D', hasStamp:true },
+  { num:'04', title:'Paludisme',       titleSize: 108*S,
+    detail:'Traitement antipaludéen',
+    sub:'Avis médical avant le départ',
+    svg: SVG_PILL, accent:'#008751', checkColor:'#008751', hasStamp:false },
+  { num:'05', title:'Assurance',       titleSize: 108*S,
+    detail:'Frais médicaux',
+    sub:'+ Rapatriement',
+    svg: SVG_SHIELD, accent:'#1B2B3C', checkColor:'#008751', hasStamp:false },
+  { num:'06', title:'Billet retour',   titleSize: 88*S,
+    detail:'Requis à l\'entrée',
+    sub:null,
+    svg: SVG_TICKET, accent:'#E8112D', checkColor:'#008751', hasStamp:false },
+];
+
+// Timings (all beat-aligned, beat = 0.5 s)
+// Hook: 0–1.5s (beats 0–3)
+// Item i: 1.5 + i*1.5 to 3.0 + i*1.5
+// Recap: 10.5–11.5s
+// Chute: 11.5–13.0s
+// CTA: 13.0–15.0s
+const T_HOOK_IN   = 0.0;
+const T_ITEM      = i => 1.5 + i * 1.5;  // each item starts here
+const T_ITEM_DUR  = 1.5;
+const T_RECAP_IN  = 10.5;
+const T_CHUTE_IN  = 11.5;
+const T_CTA_IN    = 13.0;
+const TOTAL       = 15.0;
+
+// ═══════════════════════════════════════════════════════════════
+// DOM CONSTRUCTION
+// ═══════════════════════════════════════════════════════════════
+
+// ── FLAG BAR (bottom) ──────────────────────────────────────────
+const flagBar = div('flagBar', {
+  position:'absolute', bottom:'0', left:'0', right:'0',
+  height: `${8*S}px`, display:'flex', zIndex:'100',
+});
+['#008751','#FCD116','#E8112D'].forEach((c,i) => {
+  const seg = document.createElement('div');
+  seg.style.cssText = `flex:${i===1?2:1}; background:${c}; height:100%;`;
+  flagBar.appendChild(seg);
+});
+
+// ── HOOK ───────────────────────────────────────────────────────
+const hookEl = div('hook', {
+  position:'absolute', top:'0', left:'0', width:`${W}px`, height:`${H}px`,
+  display:'flex', flexDirection:'column', justifyContent:'center',
+  alignItems:'flex-start', padding:`0 ${PAD_L}px`,
+  boxSizing:'border-box',
+});
+hookEl.innerHTML = `
+  <div id="hL1" style="font-family:'Sora',sans-serif;font-weight:700;font-size:${148*S}px;
+    color:#1B2B3C;line-height:1.0;letter-spacing:${-3*S}px;white-space:nowrap;
+    transform-origin:left center">Avant de partir</div>
+  <div id="hL2" style="font-family:'Sora',sans-serif;font-weight:700;font-size:${148*S}px;
+    color:#1B2B3C;line-height:1.0;letter-spacing:${-3*S}px;white-space:nowrap;
+    transform-origin:left center">au <span style="color:#008751">Bénin</span> :</div>
+  <div id="hSub" style="font-family:'Inter',sans-serif;font-weight:400;font-size:${52*S}px;
+    color:#667888;margin-top:${28*S}px;letter-spacing:${-0.5*S}px">La checklist essentielle</div>
+`;
+
+// ── ITEM CARDS ─────────────────────────────────────────────────
+// Layout per item (9:16 vertical):
+//   y ≈ H*0.10  : item number (small)
+//   y ≈ H*0.16  : title (big)
+//   y ≈ H*0.28  : detail + sub
+//   right side  : SVG illustration (position:absolute)
+//   bottom area : big coche
+
+const itemEls = ITEMS.map((item, i) => {
+  const wrap = div(`item${i}`, {
+    position:'absolute', top:'0', left:'0',
+    width:`${W}px`, height:`${H}px`,
+    background:'#ffffff',
+    transform:`translateX(${W*1.05}px)`,
+    overflow:'hidden',
+  });
+
+  // Ghost number (très grand, fond, opacity très faible)
+  const ghost = document.createElement('div');
+  ghost.style.cssText = `
+    position:absolute; right:${-20*S}px; top:${H*0.3}px;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:${560*S}px;
+    color:rgba(0,0,0,0.025); line-height:1; pointer-events:none;
+    user-select:none; letter-spacing:-20px;`;
+  ghost.textContent = item.num;
+  wrap.appendChild(ghost);
+
+  // Barre verticale accent (left edge, dans la zone de contenu)
+  const accentBar = document.createElement('div');
+  accentBar.style.cssText = `
+    position:absolute; left:0; top:${H*0.12}px; height:${H*0.28}px;
+    width:${5*S}px; background:${item.accent};
+    border-radius:0 3px 3px 0;`;
+  wrap.appendChild(accentBar);
+
+  // Content container
+  const content = document.createElement('div');
+  content.style.cssText = `
+    position:absolute; left:${PAD_L}px; right:${W*0.42}px;
+    top:${H*0.10}px; display:flex; flex-direction:column; gap:${16*S}px;`;
+  wrap.appendChild(content);
+
+  // Item number
+  const numEl = document.createElement('div');
+  numEl.style.cssText = `
+    font-family:'Sora',sans-serif; font-weight:700; font-style:italic;
+    font-size:${48*S}px; color:${item.accent};
+    letter-spacing:${0.04*item.titleSize}px;`;
+  numEl.textContent = item.num;
+  content.appendChild(numEl);
+
+  // Title
+  const titleEl = document.createElement('div');
+  titleEl.style.cssText = `
+    font-family:'Sora',sans-serif; font-weight:700;
+    font-size:${item.titleSize}px; color:#1B2B3C;
+    line-height:1.02; letter-spacing:${-2*S}px;`;
+  titleEl.textContent = item.title;
+  content.appendChild(titleEl);
+
+  // Detail
+  const detailEl = document.createElement('div');
+  detailEl.style.cssText = `
+    font-family:'Inter',sans-serif; font-weight:400;
+    font-size:${46*S}px; color:#667888; line-height:1.35;
+    margin-top:${8*S}px;`;
+  detailEl.textContent = item.detail;
+  content.appendChild(detailEl);
+
+  // Sub
+  if (item.sub) {
+    const subEl = document.createElement('div');
+    subEl.style.cssText = `
+      font-family:'Inter',sans-serif; font-weight:600;
+      font-size:${38*S}px; color:${item.accent}; line-height:1.3;`;
+    subEl.textContent = item.sub;
+    content.appendChild(subEl);
+  }
+
+  // SVG illustration (right side, large)
+  const svgWrap = document.createElement('div');
+  svgWrap.id = `item${i}_svg`;
+  const svgW = 340 * S;
+  const svgH = 400 * S;
+  svgWrap.style.cssText = `
+    position:absolute; right:${40*S}px; top:${H*0.10}px;
+    width:${svgW}px; height:${svgH}px;
+    display:flex; align-items:center; justify-content:center;`;
+  svgWrap.innerHTML = item.svg;
+  const svgEl = svgWrap.querySelector('svg');
+  if (svgEl) svgEl.style.cssText = 'width:100%;height:100%;';
+  wrap.appendChild(svgWrap);
+
+  // Coche SVG (big, draws itself) - positioned below SVG
+  // Checkmark path: M10,80 L80,150 L220,20 (300×170 viewBox)
+  // Approximate path length: leg1 = sqrt(70²+70²)≈99, leg2=sqrt(140²+130²)≈191 → total≈290, with dasharray=320
+  const chkWrap = document.createElement('div');
+  chkWrap.id = `item${i}_check`;
+  const chkW = 280 * S;
+  const chkH = 190 * S;
+  chkWrap.style.cssText = `
+    position:absolute; right:${40*S}px;
+    bottom:${380*S}px;
+    width:${chkW}px; height:${chkH}px;`;
+  chkWrap.innerHTML = `
+    <svg viewBox="0 0 280 190" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <path id="ck${i}" d="M10,100 L85,165 L270,25"
+        fill="none" stroke="${item.checkColor}" stroke-width="${30*S/S}px"
+        stroke-linecap="round" stroke-linejoin="round"
+        stroke-dasharray="380" stroke-dashoffset="380"/>
+    </svg>`;
+  wrap.appendChild(chkWrap);
+
+  // OBLIGATOIRE stamp (item 2 = Vaccin = index 2)
+  if (item.hasStamp) {
+    const stamp = document.createElement('div');
+    stamp.id = `item${i}_stamp`;
+    stamp.style.cssText = `
+      position:absolute; left:${PAD_L}px; bottom:${350*S}px;
+      transform:rotate(-11deg) scale(0); transform-origin:center center;`;
+    stamp.innerHTML = `<div style="
+      display:inline-block;
+      border:${5*S}px solid #E8112D;
+      border-radius:${5*S}px;
+      padding:${10*S}px ${22*S}px;
+      font-family:'Sora',sans-serif; font-weight:700;
+      font-size:${58*S}px; color:#E8112D;
+      letter-spacing:${4*S}px;
+      opacity:0.88;
+      text-transform:uppercase;
+    ">OBLIGATOIRE</div>`;
+    wrap.appendChild(stamp);
+  }
+
+  return wrap;
+});
+
+// ── RECAP ──────────────────────────────────────────────────────
+const recapEl = div('recap', {
+  position:'absolute', top:'0', left:'0',
+  width:`${W}px`, height:`${H}px`,
+  background:'#ffffff',
+  display:'flex', flexDirection:'column',
+  justifyContent:'center', alignItems:'flex-start',
+  padding:`${SZ.top}px ${PAD_L}px ${SZ.bot}px ${PAD_L}px`,
+  boxSizing:'border-box',
+  transform:`translateX(${W}px)`,
+});
+
+const recapTitle = document.createElement('div');
+recapTitle.style.cssText = `font-family:'Sora',sans-serif;font-weight:700;
+  font-size:${68*S}px;color:#1B2B3C;margin-bottom:${36*S}px;
+  letter-spacing:${-1*S}px;`;
+recapTitle.textContent = 'La checklist :';
+recapEl.appendChild(recapTitle);
+
+const recapRows = ITEMS.map((item, i) => {
+  const row = document.createElement('div');
+  row.id = `rr${i}`;
+  row.style.cssText = `
+    display:flex; align-items:center; gap:${20*S}px;
+    margin-bottom:${18*S}px; opacity:0; transform:translateX(${-32*S}px);`;
+  row.innerHTML = `
+    <div style="width:${38*S}px;height:${38*S}px;border-radius:50%;
+      background:${item.checkColor};flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;">
+      <svg viewBox="0 0 20 20" style="width:${22*S}px;height:${22*S}px">
+        <path d="M3,10 L8,15.5 L17,5" stroke="white" stroke-width="2.8"
+          fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span style="font-family:'Inter',sans-serif;font-weight:600;
+      font-size:${48*S}px;color:#1B2B3C">${item.title}</span>`;
+  recapEl.appendChild(row);
+  return row;
+});
+
+// ── CHUTE ──────────────────────────────────────────────────────
+const chuteEl = div('chute', {
+  position:'absolute', top:'0', left:'0',
+  width:`${W}px`, height:`${H}px`,
+  background:'#008751',
+  display:'flex', flexDirection:'column',
+  justifyContent:'center', alignItems:'flex-start',
+  padding:`0 ${PAD_L}px`,
+  boxSizing:'border-box',
+  transform:`translateY(${H}px)`,
+  overflow:'hidden',
+});
+chuteEl.innerHTML = `
+  <div id="cL1" style="font-family:'Sora',sans-serif;font-weight:700;
+    font-size:${128*S}px;color:white;line-height:1.0;
+    letter-spacing:${-3*S}px;">Il ne manque</div>
+  <div id="cL2" style="font-family:'Sora',sans-serif;font-weight:700;
+    font-size:${128*S}px;color:white;line-height:1.0;
+    letter-spacing:${-3*S}px;margin-bottom:${48*S}px">que le billet.</div>
+  <div id="cL3" style="font-family:'Inter',sans-serif;font-weight:400;
+    font-size:${46*S}px;color:rgba(255,255,255,0.75);line-height:1.45;
+    max-width:${780*S}px">Soyez prévenu dès l'ouverture<br>des vols spéciaux Paris-Cotonou.</div>
+`;
+// Barre tricolore en bas de la chute (sur fond vert)
+const chuteBar = document.createElement('div');
+chuteBar.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:${8*S}px;display:flex;`;
+['#1B2B3C','#FCD116','#E8112D'].forEach((c,i) => {
+  const s = document.createElement('div');
+  s.style.cssText = `flex:${i===1?2:1};background:${c};`;
+  chuteBar.appendChild(s);
+});
+chuteEl.appendChild(chuteBar);
+
+// ── CTA ─────────────────────────────────────────────────────────
+const ctaEl = div('cta', {
+  position:'absolute', top:'0', left:'0',
+  width:`${W}px`, height:`${H}px`,
+  background:'#ffffff',
+  transform:`translateY(${H}px)`,
+  overflow:'hidden',
+});
+
+// CTA content
+const ctaContent = document.createElement('div');
+ctaContent.style.cssText = `
+  position:absolute; left:${PAD_L}px; right:${PAD_L}px;
+  top:${SZ.top + 80*S}px;`;
+ctaEl.appendChild(ctaContent);
+
+// Logo + wordmark
+const ctaLogo = document.createElement('div');
+ctaLogo.style.cssText = `display:flex;align-items:center;gap:${22*S}px;margin-bottom:${52*S}px;`;
+ctaLogo.innerHTML = `
+  <div style="width:${86*S}px;height:${86*S}px;flex-shrink:0">${SVG_LOGO}</div>
+  <div style="font-family:'Sora',sans-serif;font-weight:700;
+    font-size:${46*S}px;color:#1B2B3C;letter-spacing:${-0.5*S}px;line-height:1.15">
+    Alertes Vols Bénin</div>`;
+ctaContent.appendChild(ctaLogo);
+
+// Main copy
+const ctaCopy = document.createElement('div');
+ctaCopy.innerHTML = `
+  <div style="font-family:'Sora',sans-serif;font-weight:700;
+    font-size:${86*S}px;color:#1B2B3C;line-height:1.05;
+    letter-spacing:${-2*S}px;margin-bottom:${24*S}px">
+    Soyez prévenu<br>dès l'ouverture.</div>
+  <div style="font-family:'Inter',sans-serif;font-weight:400;
+    font-size:${46*S}px;color:#667888;line-height:1.4;
+    margin-bottom:${52*S}px">Vols spéciaux Paris-Cotonou</div>`;
+ctaContent.appendChild(ctaCopy);
+
+// Arc Paris → Cotonou
+const arcWrap = document.createElement('div');
+arcWrap.style.cssText = `
+  position:relative; width:${920*S}px; height:${140*S}px;
+  margin-bottom:${48*S}px; margin-left:-${8*S}px;`;
+arcWrap.innerHTML = `
+<svg id="arcSvg" viewBox="0 0 920 140" xmlns="http://www.w3.org/2000/svg"
+     style="width:100%;height:100%">
+  <!-- Villes -->
+  <circle cx="80" cy="110" r="9" fill="#1B2B3C"/>
+  <text x="80" y="132" text-anchor="middle" font-family="Inter,sans-serif"
+        font-size="18" fill="#667888" font-weight="600">Paris</text>
+  <circle cx="840" cy="110" r="9" fill="#008751"/>
+  <text x="840" y="132" text-anchor="middle" font-family="Inter,sans-serif"
+        font-size="18" fill="#667888" font-weight="600">Cotonou</text>
+  <!-- Arc de fond (pointillés) -->
+  <path d="M80,110 Q460,0 840,110" fill="none" stroke="rgba(27,43,60,0.15)"
+        stroke-width="6" stroke-dasharray="8 6"/>
+  <!-- Arc animé vert -->
+  <path id="arcPath" d="M80,110 Q460,0 840,110" fill="none"
+        stroke="#008751" stroke-width="7" stroke-linecap="round"
+        stroke-dasharray="1220" stroke-dashoffset="1220"/>
+  <!-- Avion -->
+  <g id="arcPlane" style="opacity:0">
+    <path d="M0,-10 C2.5,-9 4,-5 4,0 L18,-2.5 L18,2.5 L4,5 L4,9 L8,12 L8,15 L0,11.5 L-8,15 L-8,12 L-4,9 L-4,5 L-18,2.5 L-18,-2.5 L-4,-2.5 C-4,-5 -2.5,-9 0,-10 Z"
+          fill="#008751"/>
+  </g>
+</svg>`;
+ctaContent.appendChild(arcWrap);
+
+// URL
+const ctaUrl = document.createElement('div');
+ctaUrl.style.cssText = `
+  font-family:'Sora',sans-serif; font-weight:700;
+  font-size:${58*S}px; color:#008751;
+  letter-spacing:${-0.5*S}px; margin-bottom:${40*S}px;`;
+ctaUrl.textContent = 'alertesvolsbenin.com';
+ctaContent.appendChild(ctaUrl);
+
+// Disclaimer
+const ctaDisclaimer = document.createElement('div');
+ctaDisclaimer.style.cssText = `
+  font-family:'Inter',sans-serif; font-weight:400;
+  font-size:${26*S}px; color:#9BADB3; line-height:1.55;
+  max-width:${820*S}px;`;
+ctaDisclaimer.textContent = 'Service indépendant, non affilié au Gouvernement du Bénin ni à Bénin Tours S.A.';
+ctaContent.appendChild(ctaDisclaimer);
+
+// ═══════════════════════════════════════════════════════════════
+// SEEK — FONCTION PURE DU TEMPS
+// ═══════════════════════════════════════════════════════════════
+window.seek = function(t) {
+
+  // ── FLAG BAR ──────────────────────────────────────────────
+  const flagP = sp(t, 0.3, 0.5, 0.88);
+  flagBar.style.transform = `translateY(${lerp(20, 0, flagP) * S}px)`;
+  flagBar.style.opacity   = String(clamp(flagP * 2));
+
+  // ── HOOK ──────────────────────────────────────────────────
+  const hookVisible = t < 1.8;
+  hookEl.style.display = hookVisible ? '' : 'none';
+  if (hookVisible) {
+    // Line 1 : slide depuis gauche — déclenché à t=-0.1 pour que t=0 soit déjà partiellement entré
+    const p1in  = sp(t, -0.1, 0.38, 0.85);
+    const p1out = MK.tween(t, 1.1, 1.5, 0, 1, MK.ease.inOutCubic);
+    const x1    = lerp(-W * 0.2, 0, p1in) - lerp(0, W * 0.2, p1out);
+    const op1   = clamp(p1in * 3) * (1 - p1out);
+    css($('hL1'), { transform:`translateX(${x1}px)`, opacity:String(op1) });
+
+    // Line 2 : décalée 80 ms
+    const p2in  = sp(t, -0.02, 0.38, 0.85);
+    const x2    = lerp(-W * 0.2, 0, p2in) - lerp(0, W * 0.2, p1out);
+    const op2   = clamp(p2in * 3) * (1 - p1out);
+    css($('hL2'), { transform:`translateX(${x2}px)`, opacity:String(op2) });
+
+    // Sub
+    const psub = MK.tween(t, 0.2, 0.65, 0, 1, MK.ease.outCubic);
+    css($('hSub'), {
+      opacity: String(clamp(psub) * (1 - p1out)),
+      transform: `translateY(${lerp(16, 0, psub) * S}px)`,
+    });
+  }
+
+  // ── ITEM CARDS ────────────────────────────────────────────
+  ITEMS.forEach((item, i) => {
+    const t0  = T_ITEM(i);
+    const t1  = t0 + T_ITEM_DUR;
+    const vis = t >= t0 - 0.25 && t < t1 + 0.25;
+    const el  = itemEls[i];
+    el.style.display = vis ? '' : 'none';
+    if (!vis) return;
+
+    // Entrée depuis la droite (spring rapide)
+    const pIn  = sp(t, t0, 0.32, 0.88);
+    // Sortie vers la gauche (rapide, critique)
+    const pOut = sp(t, t1 - 0.12, 0.22, 1.0);
+
+    const xIn  = lerp(W * 1.05, 0, pIn);
+    const xOut = lerp(0, -W * 0.12, pOut);
+    const x    = xIn + xOut;
+    const opIn = clamp(pIn * 4);
+    const opOut = 1 - clamp(MK.tween(t, t1 - 0.08, t1, 0, 1));
+
+    el.style.transform = `translateX(${x}px)`;
+    el.style.opacity   = String(opIn * opOut);
+
+    // SVG : légère mise à l'échelle au spring
+    const svgEl = $(`item${i}_svg`);
+    if (svgEl) {
+      const scl = lerp(0.82, 1.0, sp(t, t0, 0.45, 0.80));
+      svgEl.style.transform = `scale(${scl})`;
+      svgEl.style.transformOrigin = 'center center';
+    }
+
+    // Coche : se dessine à partir de t0+0.35
+    const ckPath = $(`ck${i}`);
+    if (ckPath) {
+      const ckP = clamp(MK.tween(t, t0 + 0.35, t0 + 0.78, 0, 1, MK.ease.outCubic));
+      ckPath.style.strokeDashoffset = String(380 * (1 - ckP));
+    }
+
+    // Tampon OBLIGATOIRE (item index 2)
+    if (item.hasStamp) {
+      const stEl = $(`item${i}_stamp`);
+      if (stEl) {
+        const stP = sp(t, t0 + 0.25, 0.32, 0.72);
+        const stScale = clamp(stP);
+        stEl.style.transform = `rotate(-11deg) scale(${stScale})`;
+        stEl.style.opacity   = String(clamp(stP * 2));
+      }
+    }
+  });
+
+  // ── RECAP ─────────────────────────────────────────────────
+  const recapVis = t >= T_RECAP_IN - 0.25 && t < T_CHUTE_IN + 0.15;
+  recapEl.style.display = recapVis ? '' : 'none';
+  if (recapVis) {
+    const pIn  = sp(t, T_RECAP_IN, 0.35, 0.88);
+    const pOut = MK.tween(t, T_CHUTE_IN - 0.15, T_CHUTE_IN, 0, 1, MK.ease.inOutCubic);
+    recapEl.style.transform = `translateX(${lerp(W * 0.06, 0, pIn)}px)`;
+    recapEl.style.opacity   = String(clamp(pIn * 3) * (1 - pOut));
+
+    // Cascade des lignes
+    recapRows.forEach((row, i) => {
+      const rStart = T_RECAP_IN + 0.05 + i * 0.09;
+      const rP = sp(t, rStart, 0.32, 0.88);
+      row.style.opacity   = String(clamp(rP * 2));
+      row.style.transform = `translateX(${lerp(-28 * S, 0, clamp(rP * 2))}px)`;
+    });
+  }
+
+  // ── CHUTE ─────────────────────────────────────────────────
+  const chuteVis = t >= T_CHUTE_IN - 0.25 && t < T_CTA_IN + 0.1;
+  chuteEl.style.display = chuteVis ? '' : 'none';
+  if (chuteVis) {
+    const pIn  = sp(t, T_CHUTE_IN, 0.45, 0.88);
+    const pOut = MK.tween(t, T_CTA_IN - 0.18, T_CTA_IN, 0, 1, MK.ease.inOutCubic);
+    // Slide depuis le bas
+    const y    = lerp(H * 0.05, 0, pIn) - lerp(0, -H * 0.05, pOut);
+    chuteEl.style.transform = `translateY(${y}px)`;
+    chuteEl.style.opacity   = String(clamp(pIn * 3) * (1 - pOut));
+
+    // Lines du texte
+    const scl1 = lerp(0.88, 1.0, sp(t, T_CHUTE_IN + 0.05, 0.5, 0.85));
+    css($('cL1'), { transform:`scale(${scl1})`, transformOrigin:'left center' });
+    const scl2 = lerp(0.88, 1.0, sp(t, T_CHUTE_IN + 0.12, 0.5, 0.85));
+    css($('cL2'), { transform:`scale(${scl2})`, transformOrigin:'left center' });
+    const op3  = clamp(MK.tween(t, T_CHUTE_IN + 0.4, T_CHUTE_IN + 0.8, 0, 1));
+    css($('cL3'), { opacity:String(op3) });
+  }
+
+  // ── CTA ───────────────────────────────────────────────────
+  const ctaVis = t >= T_CTA_IN - 0.25;
+  ctaEl.style.display = ctaVis ? '' : 'none';
+  if (ctaVis) {
+    const pIn  = sp(t, T_CTA_IN, 0.5, 0.88);
+    // Slide depuis le bas (comme si la page tourne)
+    const y    = lerp(H * 0.04, 0, pIn);
+    ctaEl.style.transform = `translateY(${y}px)`;
+    ctaEl.style.opacity   = String(clamp(pIn * 3));
+
+    // Arc tracé
+    const arcPath  = document.getElementById('arcPath');
+    const arcPlane = document.getElementById('arcPlane');
+    if (arcPath) {
+      const arcStart = T_CTA_IN + 0.5;
+      const arcP = MK.tween(t, arcStart, arcStart + 1.4, 0, 1, MK.ease.inOutCubic);
+      arcPath.style.strokeDashoffset = String(1220 * (1 - arcP));
+
+      // Avion suit l'arc
+      if (arcPlane && arcP > 0) {
+        const u  = arcP;
+        // Bezier quadratique P0=(80,110) P1=(460,0) P2=(840,110)
+        const bx = (1-u)*(1-u)*80  + 2*(1-u)*u*460  + u*u*840;
+        const by = (1-u)*(1-u)*110 + 2*(1-u)*u*0    + u*u*110;
+        // Tangente
+        const tx = 2*((1-u)*(460-80)  + u*(840-460));
+        const ty = 2*((1-u)*(0-110)   + u*(110-0));
+        const angle = Math.atan2(ty, tx) * 180 / Math.PI;
+        arcPlane.setAttribute('transform', `translate(${bx},${by}) rotate(${angle})`);
+        arcPlane.style.opacity = String(clamp(arcP * 6));
+      }
+    }
+  }
+
+  // ── Micro-mouvement caméra world (légère dérive) ──────────
+  const drift = MK.noise1(t * 0.4, 7) * 3 * S;
+  world.style.transform = `translateY(${drift}px)`;
+};
+
+// ─── GUIDES TikTok ───────────────────────────────────────────
+if (q.get('guides') && FORMAT === 'vertical') {
+  const g = document.getElementById('guides');
+  g.style.display = 'block';
+  [[0, 0, W, H * .08], [0, H * .78, W, H * .22], [W * .88, 0, W * .12, H]].forEach(([x, y, w, h]) => {
+    const d = document.createElement('div');
+    Object.assign(d.style, { left:x+'px', top:y+'px', width:w+'px', height:h+'px' });
+    g.appendChild(d);
+  });
+}
+
+// ─── BOOT ────────────────────────────────────────────────────
+Promise.all([document.fonts.ready]).then(() => {
+  window.seek(0);
+  window.__ready = true;
+});
+
+if (!q.get('render')) {
+  const t0 = performance.now();
+  (function loop() {
+    window.seek(((performance.now() - t0) / 1000) % window.DURATION);
+    requestAnimationFrame(loop);
+  })();
+}
+</script>
+</body>
+</html>
