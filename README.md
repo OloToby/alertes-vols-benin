@@ -1,4 +1,4 @@
-# Bénin Flight Watcher
+# Alertes Vols Bénin
 
 Surveille `voyage.benin.bj` et alerte les abonnés dès que les réservations de vols charters Bénin ouvrent. Conçu pour la diaspora béninoise (Canada, USA, Gabon, France) qui a raté l'ouverture éclair de décembre 2025.
 
@@ -85,7 +85,7 @@ Avant chaque envoi, `safeFanout` relit l'état KV pour vérifier que le fan-out 
 ## Installation
 
 ```bash
-cd benin-flight-watcher
+cd alertes-vols-benin
 npm install
 npx wrangler login
 ```
