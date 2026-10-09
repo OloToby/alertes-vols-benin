@@ -2,6 +2,11 @@ name = "benin-flight-watcher"
 main = "src/index.js"
 compatibility_date = "2024-11-01"
 
+# Polices auto-hébergées (self-hosted) — Sora + Inter en WOFF2, servis par Cloudflare
+# Supprime la dépendance à fonts.googleapis.com (transfert d'IP vers Google)
+[assets]
+directory = "./public"
+
 # Vérifie la page toutes les minutes.
 [triggers]
 crons = ["*/1 * * * *", "0 6,18 * * *"]
@@ -38,8 +43,9 @@ PLACEHOLDER_MARKERS = "bientôt disponible,sera bientôt,coming soon"
 # URL publique du Worker — nécessaire pour les liens dans les emails (confirm, unsubscribe)
 APP_BASE_URL = "https://alertesvolsbenin.com"
 
-# Clé publique Cloudflare Turnstile (visible dans le HTML — pas un secret)
-TURNSTILE_SITE_KEY = "0x4AAAAAAEpmuQ5vwMiDBYmH"
+# Turnstile désactivé — le widget causait des messages d'erreur côté client
+# sans jamais bloquer côté serveur (la protection est assurée par le rate-limit)
+TURNSTILE_SITE_KEY = ""
 
 # Routes profondes à sonder (HEAD) pour la cross-confirmation
 # Si le site utilise d'autres chemins, modifier ici sans redéployer le code

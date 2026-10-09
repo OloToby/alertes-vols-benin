@@ -5,10 +5,14 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "tail": "wrangler tail",
+    "test": "node --test test/ratelimit.test.mjs"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "miniflare": "^5.20260921.0-alpha",
     "playwright": "^1.63.0",
+    "vitest": "^4.1.11",
     "wrangler": "^4.129.0"
   }
 }

@@ -31,26 +31,41 @@ function browser(ua) {
   return 'Other';
 }
 
-function referrerType(ref) {
+function extractUtm(urlStr) {
+  try { return new URL(urlStr, 'https://base').searchParams.get('utm_source') || ''; } catch { return ''; }
+}
+
+function referrerType(ref, reqUrl, utmHint) {
+  // UTM hint passed explicitly (from form body)
+  const utm = (utmHint || extractUtm(reqUrl) || extractUtm(ref) || '').trim().toLowerCase().slice(0, 40);
+  if (utm) {
+    if (utm === 'ig' || utm === 'insta')  return 'instagram';
+    if (utm === 'fb')                      return 'facebook';
+    if (utm === 'wa')                      return 'whatsapp';
+    if (utm === 'yt')                      return 'youtube';
+    if (utm === 'tt')                      return 'tiktok';
+    return utm;
+  }
   if (!ref) return 'direct';
-  if (/wa\.me|whatsapp/i.test(ref))          return 'whatsapp';
+  if (/wa\.me|whatsapp/i.test(ref))                return 'whatsapp';
   if (/facebook\.com|fb\.me|m\.facebook/i.test(ref)) return 'facebook';
-  if (/instagram\.com/i.test(ref))           return 'instagram';
-  if (/google\./i.test(ref))                 return 'google';
-  if (/twitter\.com|t\.co/i.test(ref))       return 'twitter';
-  if (/youtube\.com/i.test(ref))             return 'youtube';
-  if (/tiktok\.com/i.test(ref))              return 'tiktok';
+  if (/instagram\.com/i.test(ref))                 return 'instagram';
+  if (/google\./i.test(ref))                       return 'google';
+  if (/twitter\.com|t\.co/i.test(ref))             return 'twitter';
+  if (/youtube\.com/i.test(ref))                   return 'youtube';
+  if (/tiktok\.com/i.test(ref))                    return 'tiktok';
+  if (/t\.me|telegram/i.test(ref))                 return 'telegram';
+  if (/discord/i.test(ref))                        return 'discord';
   return 'other';
 }
 
 // env remplace db en premier argument — donne accès à env.DB et env.STATE (sel KV)
-export async function trackEvent(env, request, eventName, metadata = null, pageOverride = null) {
+// utmHint : utm_source transmis explicitement depuis le body du formulaire (survit à la perte du Referer)
+export async function trackEvent(env, request, eventName, metadata = null, pageOverride = null, utmHint = '') {
   if (!env?.DB) return;
   try {
     const ua  = request.headers.get('User-Agent') || '';
     const ref = request.headers.get('Referer')    || '';
-    // pageOverride : page réelle de l'utilisateur (beacon client ou Referer),
-    // sinon fallback sur le pathname de la requête courante.
     let page = pageOverride;
     if (!page) {
       const referer = request.headers.get('Referer');
@@ -68,7 +83,7 @@ export async function trackEvent(env, request, eventName, metadata = null, pageO
       request.headers.get('CF-IPCountry') || 'XX',
       device(ua),
       browser(ua),
-      referrerType(ref)
+      referrerType(ref, request.url, utmHint)
     ).run();
   } catch (err) {
     console.warn('analytics.trackEvent:', err?.message);

@@ -1,5 +1,8 @@
+import { FONT_CSS } from '../fonts.js';
+
 export function legalPage() {
-  const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  // Date à mettre à jour manuellement à chaque modification substantielle du contenu
+  const lastUpdated = "25 septembre 2026";
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -7,14 +10,11 @@ export function legalPage() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conditions Générales de Vente &amp; Mentions Légales | Alertes Vols Bénin</title>
   <meta name="robots" content="noindex">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23008751'/%3E%3Ctext x='16' y='24' text-anchor='middle' font-size='22'%3E✈%3C/text%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root{--deep:#1B2B3C;--accent:#008751;--muted:#667888;--line:rgba(27,43,60,0.10);--bg:#F8F6F1;--flag-green:#008751;--flag-yellow:#FCD116;--flag-red:#E8112D;--font-display:'Sora',sans-serif;--font-body:'Inter',sans-serif}
+  <link rel="icon" type="image/svg+xml" href="/logo-icon.svg">
+  <style>${FONT_CSS}
+    :root{--deep:#1B2B3C;--accent:#008751;--muted:#667888;--line:rgba(27,43,60,0.10);--bg:#F8F6F1;--flag-green:#008751;--flag-yellow:#FCD116;--flag-red:#E8112D;--font-display:'Sora',sans-serif;--font-body:'Sora',sans-serif}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth;overflow-x:hidden}
+    html{scroll-behavior:smooth}
     body{font-family:var(--font-body);background:var(--bg);color:var(--deep);line-height:1.75;font-size:15px;overflow-x:hidden}
     a{color:var(--accent);text-decoration:none}
     a:hover{text-decoration:underline}
@@ -24,6 +24,27 @@ export function legalPage() {
     .wordmark-icon{width:32px;height:32px;border-radius:7px;background:var(--flag-green);display:flex;align-items:center;justify-content:center;font-size:16px}
     .back-btn{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:5px}
     .back-btn:hover{color:var(--deep);text-decoration:none}
+    .wordmark-label{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:0.01em;color:var(--deep)}
+    .flag-nav-wrap{position:relative}
+    .flag-chip{width:38px;height:26px;border-radius:5px;cursor:pointer;border:none;padding:0;background:none;position:relative;transition:transform .15s,box-shadow .15s;box-shadow:0 0 0 1px rgba(27,43,60,0.15)}
+    .flag-chip:hover{transform:scale(1.06);box-shadow:0 0 0 2px rgba(27,43,60,0.28)}
+    .flag-bg{position:absolute;inset:0;border-radius:5px;overflow:hidden;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:1fr 1fr;pointer-events:none}
+    .flag-bg span:nth-child(1){grid-row:1/3;grid-column:1;background:var(--flag-green)}
+    .flag-bg span:nth-child(2){grid-row:1;grid-column:2;background:var(--flag-yellow)}
+    .flag-bg span:nth-child(3){grid-row:2;grid-column:2;background:var(--flag-red)}
+    .hb-line{position:absolute;left:50%;transform:translateX(-50%);width:18px;height:2px;background:#fff;border-radius:1px;box-shadow:0 0 3px rgba(0,0,0,0.5);pointer-events:none;transition:transform .22s,opacity .22s,top .22s,width .22s}
+    .hb-line:nth-child(2){top:6px}
+    .hb-line:nth-child(3){top:12px}
+    .hb-line:nth-child(4){top:18px}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(2){top:12px;transform:translateX(-50%) rotate(45deg)}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(3){opacity:0;width:0}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(4){top:12px;transform:translateX(-50%) rotate(-45deg)}
+    .flag-nav{position:absolute;top:calc(100% + 10px);right:0;min-width:200px;background:rgba(4,8,14,0.96);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);opacity:0;transform:translateY(-6px) scale(0.97);pointer-events:none;transition:opacity .18s,transform .18s;z-index:200;backdrop-filter:blur(12px)}
+    .flag-nav.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+    .flag-nav a{display:flex;align-items:center;padding:10px 14px;border-radius:8px;color:rgba(255,255,255,0.85);text-decoration:none;font-size:14px;font-weight:600;font-family:var(--font-display);letter-spacing:0.01em;transition:background .12s,color .12s}
+    .flag-nav a:hover{background:rgba(255,255,255,0.08);color:#fff;text-decoration:none}
+    .flag-nav a.active{color:var(--flag-yellow)}
+    .flag-nav-sep{height:1px;background:rgba(255,255,255,0.08);margin:4px 0}
     .flag-bar{display:flex;height:4px}
     .flag-bar div:nth-child(1){flex:1;background:var(--flag-green)}
     .flag-bar div:nth-child(2){flex:2;background:var(--flag-yellow)}
@@ -55,14 +76,14 @@ export function legalPage() {
     .prose h3{font-size:15px;font-weight:700;color:var(--deep);margin-top:6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
     .prose ul,.prose ol{padding-left:22px;color:#374a5a;font-size:15px;line-height:1.8;display:flex;flex-direction:column;gap:7px}
     .prose li{padding-left:4px}
-    .highlight{background:rgba(0,135,81,0.06);border-left:3px solid var(--flag-green);border-radius:0 10px 10px 0;padding:16px 20px;font-size:14.5px;color:#1a5a3a;line-height:1.75}
+    .highlight{background:rgba(0,1 35,81,0 .06);border-left:3px solid var(--flag-green);border-radius:0 10px 10px 0;padding:16px 20px;font-size:14.5px;color:#1a5a3a;line-height:1.75}
     .highlight strong{color:#0d3d22}
-    .warn{background:rgba(232,17,45,0.05);border-left:3px solid var(--flag-red);border-radius:0 10px 10px 0;padding:16px 20px;font-size:14.5px;color:#7a1220;line-height:1.75}
+    .warn{background:rgba(232,1 7,45,0 .05);border-left:3px solid var(--flag-red);border-radius:0 10px 10px 0;padding:16px 20px;font-size:14.5px;color:#7a1220;line-height:1.75}
     .warn strong{color:var(--deep)}
     .info-box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;font-size:14.5px;color:#374a5a;line-height:1.75}
     table{width:100%;border-collapse:collapse;font-size:14px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
-    table th{text-align:left;padding:12px 14px;background:var(--bg);font-weight:600;color:var(--deep);border-bottom:1px solid var(--line);font-size:13px;word-break:break-word}
-    table td{padding:12px 14px;border-bottom:1px solid var(--line);color:#374a5a;vertical-align:top;line-height:1.65;word-break:break-word}
+    table th{text-align:left;padding:12px 14px;background:var(--bg);font-weight:600;color:var(--deep);border-bottom:1px solid var(--line);font-size:13px;width:36%;min-width:110px;white-space:normal;hyphens:none;word-break:normal}
+    table td{padding:12px 14px;border-bottom:1px solid var(--line);color:#374a5a;vertical-align:top;line-height:1.65;overflow-wrap:break-word;word-break:break-word}
     table tr:last-child td{border-bottom:none}
     .sub-section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
     .sub-section-title{font-size:14px;font-weight:700;color:var(--deep);display:flex;align-items:center;gap:8px}
@@ -74,7 +95,7 @@ export function legalPage() {
       .main-content{padding:24px 16px 60px}
 
       /* Table → stacked cards on mobile */
-      table,table tbody,table tr{display:block}
+      table, table tbody, table tr{display:block}
       table{border-radius:10px;overflow:hidden;border:1px solid var(--line)}
       table tr{border-bottom:1px solid var(--line);padding:12px 0}
       table tr:last-child{border-bottom:none;padding-bottom:6px}
@@ -94,14 +115,24 @@ export function legalPage() {
 
 <div class="flag-bar"><div></div><div></div><div></div></div>
 <nav class="topbar">
-  <a href="/" class="wordmark">
-    <span class="wordmark-icon">✈</span>
-    Alertes Vols Bénin
+  <a href="/" class="wordmark" aria-label="Alertes Vols Bénin - accueil">
+    <img src="/logo-icon.svg" alt="" style="width:36px;height:36px;border-radius:8px;display:block;flex-shrink:0">
+    <span class="wordmark-label">Alertes Vols Bénin</span>
   </a>
-  <a href="/" class="back-btn">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>
-    Retour à l'accueil
-  </a>
+  <div class="flag-nav-wrap">
+      <button class="flag-chip" id="flagMenuBtn" aria-label="Menu" aria-expanded="false" aria-controls="flagNav">
+        <div class="flag-bg"><span></span><span></span><span></span></div>
+        <span class="hb-line"></span>
+        <span class="hb-line"></span>
+        <span class="hb-line"></span>
+      </button>
+      <nav class="flag-nav" id="flagNav" role="menu">
+        <a href="/" role="menuitem">Accueil</a>
+        <a href="/inscription" role="menuitem">Inscription</a>
+        <div class="flag-nav-sep"></div>
+        <a href="/diaspora" role="menuitem">Pour la diaspora</a>
+      </nav>
+    </div>
 </nav>
 
 <div class="layout">
@@ -133,7 +164,7 @@ export function legalPage() {
       <div class="meta">
         <span>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-4V7h2v6h-2z" fill="currentColor"/></svg>
-          Dernière mise à jour : ${today}
+          Dernière mise à jour : ${lastUpdated}
         </span>
         <span>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
@@ -151,10 +182,17 @@ export function legalPage() {
       </div>
       <div class="prose">
         <table>
-          <tr><th>Éditeur du service</th><td><strong>Alertes Vols Bénin</strong>, service numérique exploité par un particulier</td></tr>
+          <tr><th>Éditeur du service</th><td><strong>Jean Joël NADISON</strong>, entrepreneur individuel (EI), nom commercial <strong>Olohoun Studio</strong></td></tr>
+          <!-- SIREN : décommenter et compléter quand disponible
+          <tr><th>SIREN / SIRET</th><td>XXX XXX XXX, immatriculé au Registre National des Entreprises (RNE)</td></tr>
+          -->
+          <tr><th>Adresse</th><td>16 Rue Frida Kahlo, 17138 Saint-Xandre, France</td></tr>
+          <tr><th>Téléphone</th><td><a href="tel:+33749590636">+33 7 49 59 06 36</a></td></tr>
+          <tr><th>TVA</th><td>TVA non applicable, art. 293 B du CGI</td></tr>
+          <tr><th>Directeur de la publication</th><td>Jean Joël NADISON</td></tr>
           <tr><th>Site web</th><td><a href="https://alertesvolsbenin.com">alertesvolsbenin.com</a>, également accessible via <a href="https://www.alertesvolsbenin.com">www.alertesvolsbenin.com</a></td></tr>
           <tr><th>Contact</th><td><a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a> · réponse sous 72h ouvrées maximum</td></tr>
-          <tr><th>Hébergement</th><td>Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Site : <a href="https://www.cloudflare.com" target="_blank" rel="noopener">cloudflare.com</a><br>Infrastructure distribuée mondialement, conforme aux standards de sécurité SOC 2 Type II et ISO 27001.</td></tr>
+          <tr><th>Hébergement</th><td>Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, États-Unis. Tél. : +1 (650) 319-8930. Site : <a href="https://www.cloudflare.com" target="_blank" rel="noopener">cloudflare.com</a><br>Infrastructure distribuée mondialement, conforme aux standards de sécurité SOC 2 Type II et ISO 27001.</td></tr>
           <tr><th>Non-affiliation</th><td>Alertes Vols Bénin est un service <strong>totalement indépendant</strong>, non affilié à Bénin Tours S.A., au Gouvernement de la République du Bénin, au Ministère des Affaires Étrangères du Bénin, ni à aucune autre entité publique ou privée officielle. Le logo, le nom commercial et les contenus du présent site n'ont aucun lien avec ces organisations.</td></tr>
           <tr><th>Déclaration CNIL</th><td>Conformément à la réglementation applicable, les traitements de données personnelles mis en œuvre par ce service sont soumis au Règlement Général sur la Protection des Données (RGPD, Règlement UE 2016/679).</td></tr>
         </table>
@@ -322,7 +360,7 @@ export function legalPage() {
       <div class="prose">
         <p>La présente politique de confidentialité décrit de manière exhaustive la façon dont Alertes Vols Bénin collecte, utilise, stocke et protège les données personnelles de ses utilisateurs, conformément au <strong>Règlement Général sur la Protection des Données (RGPD, Règlement UE 2016/679)</strong> et à la <strong>loi française Informatique et Libertés</strong> modifiée.</p>
 
-        <p><strong>Responsable du traitement :</strong> Alertes Vols Bénin · <a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a></p>
+        <p><strong>Responsable du traitement :</strong> Jean Joël NADISON, entrepreneur individuel (Olohoun Studio) · <a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a></p>
 
         <h3>Données collectées et bases légales</h3>
         <table>
@@ -388,7 +426,7 @@ export function legalPage() {
           <tr><th>Sous-traitant</th><th>Mission</th><th>Données transmises</th><th>Politique de confidentialité</th></tr>
           <tr>
             <td><strong>Cloudflare, Inc.</strong><br>(USA)</td>
-            <td>Hébergement du Worker, base de données D1, réseau CDN, protection anti-DDoS, Cloudflare Turnstile (anti-bot)</td>
+            <td>Hébergement du Worker, base de données D1, réseau CDN, protection anti-DDoS, protection anti-bot côté serveur</td>
             <td>Ensemble des données d'inscription stockées en D1 ; adresses IP (logs transitoires uniquement)</td>
             <td><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></td>
           </tr>
@@ -412,6 +450,9 @@ export function legalPage() {
           </tr>
         </table>
         <p>Les sous-traitants basés aux États-Unis opèrent dans le cadre des mécanismes de transfert approuvés par la Commission européenne (clauses contractuelles types, dites Standard Contractual Clauses), garantissant un niveau de protection adéquat pour vos données personnelles.</p>
+
+        <h3>Transfert lié aux polices de caractères</h3>
+        <p>Les polices Sora et Inter sont auto-hébergées sur l'infrastructure Cloudflare du service. Aucune donnée n'est transmise à Google LLC (fonts.googleapis.com) lors du chargement des pages.</p>
 
         <h3>Sécurité des données</h3>
         <p>Alertes Vols Bénin met en œuvre les mesures techniques et organisationnelles suivantes pour protéger vos données personnelles contre tout accès non autorisé, divulgation, altération ou destruction :</p>
@@ -485,12 +526,15 @@ export function legalPage() {
         <p>Alertes Vols Bénin adopte une politique de collecte de données minimaliste. Le site n'utilise <strong>aucun cookie de tracking, de mesure d'audience ou publicitaire</strong>.</p>
 
         <h3>Cookies techniques strictement nécessaires</h3>
-        <p>Le site peut utiliser des cookies de session techniques strictement nécessaires au bon fonctionnement du service (par exemple, pour la protection anti-bot via Cloudflare Turnstile). Ces cookies ne nécessitent pas votre consentement préalable conformément à l'article 82 de la loi Informatique et Libertés, car ils sont indispensables au service expressément demandé.</p>
+        <p>Le site peut utiliser des cookies de session techniques strictement nécessaires au bon fonctionnement du service. Ces cookies ne nécessitent pas votre consentement préalable conformément à l'article 82 de la loi Informatique et Libertés, car ils sont indispensables au service expressément demandé.</p>
 
-        <h3>Cloudflare Turnstile</h3>
-        <p>Le formulaire d'inscription utilise <strong>Cloudflare Turnstile</strong>, un système de protection anti-bot qui vérifie de manière non intrusive que l'utilisateur est bien un être humain. Turnstile peut poser un cookie ou utiliser des techniques de stockage local à des fins de vérification d'intégrité uniquement. Aucune donnée personnelle identifiante n'est collectée par ce mécanisme à des fins de ciblage publicitaire.</p>
+        <h3>Polices de caractères</h3>
+        <p>Les polices Sora et Inter sont <strong>auto-hébergées</strong> sur l'infrastructure Cloudflare du service (fichiers WOFF2 servis depuis alertesvolsbenin.com). Aucune requête n'est effectuée vers les serveurs de Google (fonts.googleapis.com / fonts.gstatic.com) lors du chargement des pages.</p>
 
-        <h3>Analyse d'audience — outil interne, sans tiers</h3>
+        <h3>Protection anti-bot</h3>
+        <p>Le service intègre une protection anti-bot assurée côté serveur par <strong>Cloudflare</strong>. Cette protection analyse les requêtes entrantes de manière non intrusive pour distinguer les utilisateurs humains des robots. Aucune donnée personnelle identifiante n'est collectée à des fins de ciblage publicitaire via ce mécanisme.</p>
+
+        <h3>Analyse d'audience, outil interne, sans tiers</h3>
         <p>Alertes Vols Bénin utilise un système d'analyse <strong>entièrement interne</strong>, hébergé sur notre propre infrastructure Cloudflare. Aucun outil tiers (Google Analytics, Matomo, Hotjar, Facebook Pixel, etc.) n'est utilisé.</p>
         <p><strong>Mécanisme d'anonymisation :</strong> l'adresse IP n'est jamais stockée. Elle est combinée avec la date du jour et un sel secret quotidien, puis transformée via SHA-256 en un identifiant de session non réversible qui se réinitialise chaque jour. Il est impossible de retrouver l'adresse IP à partir de cet identifiant.</p>
         <p><strong>Données enregistrées côté serveur :</strong> page visitée, type d'appareil (mobile/tablette/ordinateur), navigateur, pays d'origine (code ISO-2 fourni par Cloudflare, sans stockage d'IP), source de trafic (ex. : accès direct, Facebook, WhatsApp).</p>
@@ -540,7 +584,12 @@ export function legalPage() {
         <p>En cas de litige relatif à l'interprétation ou à l'exécution des présentes conditions, une solution amiable sera systématiquement recherchée en priorité. Nous vous invitons à nous contacter en premier lieu par email à <a href="mailto:alertesvolsbenin@gmail.com">alertesvolsbenin@gmail.com</a>. Nous nous engageons à répondre dans un délai de 72 heures ouvrées et à tout mettre en œuvre pour trouver une issue satisfaisante.</p>
 
         <h3>Médiation de la consommation</h3>
-        <p>Conformément aux articles L.616-1 et R.616-1 du Code de la consommation, en cas d'échec de la résolution amiable, vous pouvez avoir recours gratuitement à un médiateur de la consommation. Vous pouvez également utiliser la plateforme européenne de résolution en ligne des litiges (RLL) accessible à l'adresse : <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a>.</p>
+        <p>Conformément aux articles L.616-1 et R.616-1 du Code de la consommation, en cas d'échec de la résolution amiable, vous pouvez avoir recours gratuitement à un médiateur de la consommation désigné par le vendeur :</p>
+        <div class="info-box">
+          <strong>CM2C, Centre de Médiation et d'Arbitrage en ligne</strong><br>
+          Site : <a href="https://www.cm2c.net" target="_blank" rel="noopener">cm2c.net</a><br>
+          14 rue Saint-Jean, 75017 Paris
+        </div>
 
         <h3>Juridiction compétente</h3>
         <p>À défaut de résolution amiable ou par médiation, tout litige sera soumis aux juridictions françaises compétentes. Pour les litiges de consommation, la juridiction compétente est celle du lieu de domicile du consommateur ou, au choix de ce dernier, celle du lieu d'exécution de la prestation de service.</p>
@@ -576,6 +625,23 @@ export function legalPage() {
     });
   }, { rootMargin: '-20% 0px -70% 0px' });
   sections.forEach(s => obs.observe(s));
+  (function(){
+    var btn=document.getElementById('flagMenuBtn');
+    var nav=document.getElementById('flagNav');
+    if(btn&&nav){
+      btn.addEventListener('click',function(e){
+        e.stopPropagation();
+        var open=nav.classList.toggle('open');
+        btn.setAttribute('aria-expanded',open?'true':'false');
+      });
+      document.addEventListener('click',function(e){
+        if(!nav.contains(e.target)&&e.target!==btn){
+          nav.classList.remove('open');
+          btn.setAttribute('aria-expanded','false');
+        }
+      });
+    }
+  })();
 </script>
 
 </body>

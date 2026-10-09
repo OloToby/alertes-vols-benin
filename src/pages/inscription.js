@@ -1,11 +1,12 @@
 import { escapeHtml } from "../notify.js";
 import { shareFabHtml } from "./shared.js";
+import { FONT_CSS } from "../fonts.js";
 
 export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, toast = "", baseUrl = "") {
   const shareUrl = `${baseUrl}/inscription`;
   const widget = turnstileSiteKey
     ? `<div class="cf-turnstile" data-sitekey="${escapeHtml(turnstileSiteKey)}" data-appearance="always" data-size="flexible" data-error-callback="onTurnstileError" data-expired-callback="onTurnstileExpired"></div>
-<p id="turnstile-hint" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin:-8px 0 14px">La vérification a échoué — vous pouvez continuer normalement.</p>`
+<p id="turnstile-hint" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin:-8px 0 14px">La vérification a échoué,v ous pouvez continuer normalement.</p>`
     : "";
   const script = turnstileSiteKey
     ? `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`
@@ -24,7 +25,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
       <div class="stepper-line"></div>
       <div class="stepper-step">
         <span class="stepper-num">2</span>
-        <span class="stepper-label">Paiement${priceDisplay ? " · " + escapeHtml(priceDisplay) : ""}</span>
+        <span class="stepper-label">Accès${priceDisplay ? " · " + escapeHtml(priceDisplay) : ""}</span>
       </div>
       <div class="stepper-line"></div>
       <div class="stepper-step">
@@ -39,17 +40,13 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inscription | Alerte Vol Paris-Cotonou</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23008751'/%3E%3Ctext x='16' y='24' text-anchor='middle' font-size='22'%3E✈%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="/logo-icon.svg">
   <meta name="description" content="Inscrivez-vous pour recevoir un email et un SMS dès que les vols Paris-Cotonou s'ouvrent sur voyage.benin.bj. Les places partent en quelques minutes.">
-<meta name="robots" content="noindex">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   ${script}
-  <style>
-    :root{--deep:#1B2B3C;--accent:#e8112d;--bg:#F8F6F1;--bg2:#FFFFFF;--muted:#667888;--line:rgba(27,43,60,0.10);--flag-green:#008751;--flag-yellow:#FCD116;--flag-red:#E8112D;--font-display:'Sora',ui-sans-serif,system-ui,sans-serif;--font-body:'Inter',ui-sans-serif,system-ui,sans-serif;--slide-dur:70s}
+  <style>${FONT_CSS}
+    :root{--deep:#1B2B3C;--accent:#e8112d;--bg:#F8F6F1;--bg2:#FFFFFF;--muted:#667888;--line:rgba(27,43,60,0.10);--flag-green:#008751;--flag-yellow:#FCD116;--flag-red:#E8112D;--font-display:'Sora',ui-sans-serif,system-ui,sans-serif;--font-body:'Sora',ui-sans-serif,system-ui,sans-serif;--slide-dur:70s}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{overflow-x:hidden}
+    html{}
     body{font-family:var(--font-body);color:var(--deep);background:linear-gradient(to bottom,#0d1a10,#111f13);min-height:100svh;display:flex;flex-direction:column;overflow-x:hidden}
 
     .slideshow{position:fixed;inset:0;z-index:-2;overflow:hidden}
@@ -65,10 +62,26 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     .wordmark{display:inline-flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
     .wordmark-icon{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1}
     .wordmark-label{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:0.01em;color:rgba(255,255,255,0.90)}
-    .flag-chip{width:32px;height:22px;border-radius:4px;overflow:hidden;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:1fr 1fr;box-shadow:0 0 0 1px rgba(255,255,255,0.28)}
-    .flag-chip span:nth-child(1){grid-row:1/3;grid-column:1;background:var(--flag-green)}
-    .flag-chip span:nth-child(2){grid-row:1;grid-column:2;background:var(--flag-yellow)}
-    .flag-chip span:nth-child(3){grid-row:2;grid-column:2;background:var(--flag-red)}
+    .flag-nav-wrap{position:relative}
+    .flag-chip{width:38px;height:26px;border-radius:5px;cursor:pointer;border:none;padding:0;background:none;position:relative;transition:transform .15s,box-shadow .15s;box-shadow:0 0 0 1px rgba(255,255,255,0.28)}
+    .flag-chip:hover{transform:scale(1.06);box-shadow:0 0 0 2px rgba(255,255,255,0.55)}
+    .flag-bg{position:absolute;inset:0;border-radius:5px;overflow:hidden;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:1fr 1fr;pointer-events:none}
+    .flag-bg span:nth-child(1){grid-row:1/3;grid-column:1;background:var(--flag-green)}
+    .flag-bg span:nth-child(2){grid-row:1;grid-column:2;background:var(--flag-yellow)}
+    .flag-bg span:nth-child(3){grid-row:2;grid-column:2;background:var(--flag-red)}
+    .hb-line{position:absolute;left:50%;transform:translateX(-50%);width:18px;height:2px;background:#fff;border-radius:1px;box-shadow:0 0 3px rgba(0,0,0,0.5);pointer-events:none;transition:transform .22s,opacity .22s,top .22s,width .22s}
+    .hb-line:nth-child(2){top:6px}
+    .hb-line:nth-child(3){top:12px}
+    .hb-line:nth-child(4){top:18px}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(2){top:12px;transform:translateX(-50%) rotate(45deg)}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(3){opacity:0;width:0}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(4){top:12px;transform:translateX(-50%) rotate(-45deg)}
+    .flag-nav{position:absolute;top:calc(100% + 10px);right:0;min-width:200px;background:rgba(4,8,14,0.96);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);opacity:0;transform:translateY(-6px) scale(0.97);pointer-events:none;transition:opacity .18s,transform .18s;z-index:200;backdrop-filter:blur(12px)}
+    .flag-nav.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+    .flag-nav a{display:flex;align-items:center;padding:10px 14px;border-radius:8px;color:rgba(255,255,255,0.85);text-decoration:none;font-size:14px;font-weight:600;font-family:var(--font-display);letter-spacing:0.01em;transition:background .12s,color .12s}
+    .flag-nav a:hover{background:rgba(255,255,255,0.08);color:#fff}
+    .flag-nav a.active{color:var(--flag-yellow)}
+    .flag-nav-sep{height:1px;background:rgba(255,255,255,0.08);margin:4px 0}
 
     .insc-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,4vw,48px) clamp(16px,4vw,40px) clamp(32px,5vw,56px)}
     .insc-intro{text-align:center;margin-bottom:28px;max-width:480px}
@@ -93,9 +106,9 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
 
     .motivation{background:rgba(232,17,45,0.06);border:1px solid rgba(232,17,45,0.12);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:14px;color:#8a1025;line-height:1.65;text-align:center}
 
-    .counter{display:inline-flex;align-items:center;gap:7px;background:rgba(0,135,81,0.08);color:var(--flag-green);font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;margin-top:16px;margin-bottom:14px}
+    .counter{display:inline-flex;align-items:center;gap:7px;background:rgba(0,135,81,0.08);color:var(--flag-green);font-size:clamp(15px,4vw,30px);font-weight:600;padding:clamp(7px,1.5vw,12px) clamp(14px,3vw,22px);border-radius:999px;margin-top:16px;margin-bottom:14px;white-space:nowrap}
     .counter-dot{width:7px;height:7px;background:var(--flag-green);border-radius:50%;flex-shrink:0;animation:pulse 1.8s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+    @keyframes pulse{0%,1 00%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
 
     .form-section-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -109,7 +122,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     input::placeholder{color:#9BADB3}
     .consent-box{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:12px;background:rgba(248,246,241,0.6);border:1.5px solid rgba(27,43,60,0.08);border-radius:10px}
     .consent-box input[type=checkbox]{width:17px;height:17px;flex-shrink:0;margin-top:2px;accent-color:var(--flag-green);cursor:pointer;-webkit-appearance:auto;padding:0;border:none;background:none}
-    .consent-label{font-size:12px;color:var(--muted);line-height:1.6;cursor:pointer}
+    .consent-label{font-size:12px;color:var(--muted);line-height:1.6;cursor:pointer;text-transform:none;letter-spacing:normal}
     .cf-turnstile{display:none!important}
     .btn{width:100%;padding:15px 30px;background:var(--flag-green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:background .2s,transform .12s;box-shadow:0 4px 20px rgba(0,135,81,0.25)}
     .btn:hover{background:#006640;transform:translateY(-1px)}
@@ -128,7 +141,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     .error-msg{font-size:11px;color:var(--accent);margin-top:4px;display:none}
     .field-error .error-msg{display:block}
     .form-alert{display:flex;align-items:center;gap:10px;background:rgba(232,17,45,0.07);border:1px solid rgba(232,17,45,0.2);border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:13px;color:#8a1025;line-height:1.5;animation:shake .4s ease}
-    @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+    @keyframes shake{0%,1 00%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 
     .back-link{background:none;border:none;color:var(--muted);font-size:13px;font-family:var(--font-body);cursor:pointer;padding:0;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;transition:color .2s}
     .back-link:hover{color:var(--deep)}
@@ -144,15 +157,20 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     .insc-top-cd-sep{font-family:var(--font-display);font-size:clamp(30px,7vw,67px);font-weight:700;color:rgba(255,255,255,0.20);padding-top:clamp(10px,3vw,22px);line-height:1}
     .hl-r{background:#ff2d2d;color:#fff!important;border-radius:4px;padding:1px 6px}
 
+    .pay-cta-bar{display:none}
     @media(max-width:480px){
       .row{grid-template-columns:1fr}
-      .insc-card-body{padding:20px 18px}
+      .insc-card-body{padding:20px 18px 130px}
+      .pay-cta-bar{display:block;position:fixed;bottom:0;left:0;right:0;padding:14px 18px 18px;background:rgba(255,255,255,0.98);border-top:1px solid rgba(27,43,60,0.10);z-index:1000;box-shadow:0 -4px 20px rgba(0,0,0,0.10)}
+      .share-fab{bottom:108px!important}
     }
     @media(prefers-reduced-motion:reduce){.counter-dot{animation:none}.slide{animation:none;opacity:1}.slide:nth-child(n+2){opacity:0}}
     .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--flag-green);color:#fff;padding:14px 24px;border-radius:10px;font-size:15px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:999;display:flex;align-items:center;gap:10px;animation:slideDown .3s ease,fadeOut .4s ease 3.8s forwards}
     @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
     @keyframes fadeOut{to{opacity:0;pointer-events:none}}
   </style>
+<script>!function(f, b , e , v , n , t , s ){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n, arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t, s )}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','2383978405745430');fbq('track','PageView');</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2383978405745430&ev=PageView&noscript=1"/></noscript>
 </head>
 <body>
   <div class="slideshow" aria-hidden="true"><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div></div>
@@ -174,10 +192,23 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
 
   <nav class="topbar">
     <a href="/" class="wordmark" aria-label="Alertes Vols Bénin - accueil">
-      <span class="wordmark-icon" aria-hidden="true">✈</span>
+      <img src="/logo-icon.svg" alt="" aria-hidden="true" style="width:36px;height:36px;border-radius:8px;display:block;flex-shrink:0">
       <span class="wordmark-label">Alertes Vols Bénin</span>
     </a>
-    <div class="flag-chip" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="flag-nav-wrap">
+      <button class="flag-chip" id="flagMenuBtn" aria-label="Menu" aria-expanded="false" aria-controls="flagNav">
+        <div class="flag-bg"><span></span><span></span><span></span></div>
+        <span class="hb-line"></span>
+        <span class="hb-line"></span>
+        <span class="hb-line"></span>
+      </button>
+      <nav class="flag-nav" id="flagNav" role="menu">
+        <a href="/" role="menuitem">Accueil</a>
+        <a href="/inscription" role="menuitem" class="active">Inscription</a>
+        <div class="flag-nav-sep"></div>
+        <a href="/diaspora" role="menuitem">Pour la diaspora</a>
+      </nav>
+    </div>
   </nav>
 
   <main class="insc-main">
@@ -192,6 +223,7 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
           <div class="insc-top-cd-sep">:</div>
           <div class="insc-top-cd-unit"><b id="ct-s">--</b><small>sec</small></div>
         </div>
+        <p style="font-family:var(--font-display);font-size:clamp(11px,2vw,14px);font-weight:600;color:rgba(255,255,255,0.70);text-align:right;align-self:stretch;margin-top:6px;line-height:1.4">Prix de lancement <strong style="color:#fff">${escapeHtml(priceDisplay)}</strong>, fin le <strong style="color:#fff">1<sup>er</sup> nov. 2026</strong></p>
         ${counter}
       </div>
     </div>
@@ -226,10 +258,10 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
             <p class="error-msg" data-for="email">Adresse email invalide.</p>
           </div>
           <div class="field">
-            <label for="phone">Téléphone <span class="req">*</span></label>
-            <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="+33 6 12 34 56 78 ou +229 97 00 00 00" inputmode="tel">
+            <label for="phone">Téléphone <span class="opt">(optionnel)</span></label>
+            <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+33 6 12 34 56 78 ou +229 97 00 00 00" inputmode="tel">
             <p class="error-msg" data-for="phone">Indicatif international requis (ex : +33 6 12 34 56 78 ou +229 97 00 00 00)</p>
-            <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Utilisé uniquement pour votre alerte SMS à l'ouverture des réservations.</p>
+            <p style="font-size:12px;color:var(--muted);margin:6px 0 0">Ajoutez votre numéro pour recevoir aussi le SMS.</p>
           </div>
           <div class="consent-box">
             <input type="checkbox" id="sms_consent" name="sms_consent" value="1" checked>
@@ -237,10 +269,11 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
           </div>
           ${widget}
           <button type="button" class="btn" id="continueBtn" style="display:flex;align-items:center;justify-content:center;gap:10px">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Payer ${escapeHtml(priceDisplay || "5,99 €")} par carte
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+            Activer mon alerte
           </button>
           <p style="text-align:center;font-size:11px;color:var(--muted);margin:8px 0 0">Paiement sécurisé par <strong>Stripe</strong> · Visa, Mastercard, CB</p>
+          <p style="text-align:center;font-size:12px;color:var(--flag-green);margin:10px 0 0;line-height:1.5">Remboursement intégral garanti si aucun vol ne s'ouvre dans les 18 mois (<a href="/cgv" style="color:var(--flag-green)">voir CGV</a>).</p>
           <div id="payError" class="form-alert" style="display:none;margin-top:12px" role="alert">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#c0392b" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></svg>
             <span id="payErrorMsg">Erreur de paiement. Réessayez.</span>
@@ -251,9 +284,17 @@ export function inscriptionPage(turnstileSiteKey, confirmedCount, priceDisplay, 
     </div>
   </main>
 
+  <div class="pay-cta-bar">
+    <button type="button" class="btn" id="continueBtnMobile" style="display:flex;align-items:center;justify-content:center;gap:10px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      Activer mon alerte
+    </button>
+    <p style="text-align:center;font-size:11px;color:var(--muted);margin:8px 0 0">Paiement sécurisé par <strong>Stripe</strong> · Visa, Mastercard, CB</p>
+  </div>
+
   <footer class="insc-footer">
     Service indépendant, non affilié à Bénin Tours S.A. ni au Gouvernement du Bénin.<br>
-    <a href="/cgv">Conditions Générales de Vente</a> · <a href="/cgv">Mentions légales</a> · <a href="/cgv">Politique de confidentialité</a>
+    <a href="/cgv">Conditions Générales de Vente</a> · <a href="/cgv#mentions">Mentions légales</a> · <a href="/cgv#confidentialite">Politique de confidentialité</a>
     <div class="footer-bar"><span class="bar-green"></span><span class="bar-yellow"></span><span class="bar-red"></span></div>
   </footer>
 ${shareFabHtml(shareUrl)}
@@ -264,10 +305,10 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
   var form=document.querySelector('form');
   if(!form)return;
   var rules=[
-    {id:'first_name',test:function(v){return v.trim().length>0}},
-    {id:'last_name',test:function(v){return v.trim().length>0}},
-    {id:'email',test:function(v){return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim())}},
-    {id:'phone',test:function(v){var d=v.trim().replace(/[\\s\\-\\(\\)\\.]/g,'');return /^\\+\\d{7,15}$/.test(d);}}
+    {id:'first_name', test:function(v){return v.trim().length>0}},
+    {id:'last_name', test:function(v){return v.trim().length>0}},
+    {id:'email', test:function(v){return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim())}},
+    {id:'phone', test:function(v){if(!v.trim())return true;var d=v.trim().replace(/[\\s\\-\\(\\)\\.]/g,'');return /^\\+\\d{7,15}$/.test(d);}}
   ];
   function clearError(id){
     var f=document.getElementById(id);
@@ -275,7 +316,7 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
   }
   rules.forEach(function(r){
     var el=document.getElementById(r.id);
-    if(el)el.addEventListener('input',function(){clearError(r.id);var a=document.getElementById('form-alert');if(a)a.remove();});
+    if(el)el.addEventListener('input', function(){clearError(r.id);var a=document.getElementById('form-alert');if(a)a.remove();});
   });
 
   function validateForm(){
@@ -294,7 +335,7 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
       msg.className='form-alert';
       msg.setAttribute('role','alert');
       msg.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#c0392b" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></svg>Veuillez corriger les champs en rouge.';
-      form.insertBefore(msg,form.firstChild);
+      form.insertBefore(msg, form.firstChild);
       document.getElementById(errors[0]).focus();
       return false;
     }
@@ -303,6 +344,11 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
 
   var continueBtn=document.getElementById('continueBtn');
 
+  // Persist UTM source across the session (survit aux navigations internes)
+  var utmSource=(new URLSearchParams(window.location.search)).get('utm_source')||'';
+  if(utmSource){try{sessionStorage.setItem('_utm', utmSource);}catch{}}
+  else{try{utmSource=sessionStorage.getItem('_utm')||'';}catch{}}
+
   function getFormData(){
     return {
       email:document.getElementById('email').value.trim(),
@@ -310,7 +356,7 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
       lastName:document.getElementById('last_name').value.trim(),
       phone:document.getElementById('phone').value.trim(),
       smsConsent:document.getElementById('sms_consent').checked,
-      turnstileToken:(document.querySelector('[name="cf-turnstile-response"]')||{}).value||''
+      utmSource:utmSource
     };
   }
 
@@ -320,38 +366,36 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
     el.style.display='flex';
   }
 
-  if(continueBtn){
-    continueBtn.addEventListener('click',function(){
-      if(!validateForm())return;
-      var btn=this;
-      btn.disabled=true;
-      var origHtml=btn.innerHTML;
-      btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Redirection en cours...';
-      var data=getFormData();
-      fetch('/api/create-stripe-session',{
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body:JSON.stringify(data)
-      }).then(function(r){return r.json();}).then(function(d){
-        if(d.url){
-          window.location.href=d.url;
-        } else {
-          var msgs={dejainscrit:'Vous êtes déjà inscrit.',ratelimit:'Trop de tentatives. Réessayez.',paiement:'Erreur de paiement.'};
-          showPayError(msgs[d.error]||'Erreur de paiement.');
-          btn.disabled=false;
-          btn.innerHTML=origHtml;
-        }
-      }).catch(function(){
-        showPayError('Erreur de connexion. Réessayez.');
+  function doPayment(btn){
+    if(!validateForm())return;
+    btn.disabled=true;
+    var origHtml=btn.innerHTML;
+    btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Redirection en cours...';
+    var data=getFormData();
+    fetch('/api/create-stripe-session',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify(data)
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.url){
+        window.location.href=d.url;
+      } else {
+        var msgs={dejainscrit:'Vous êtes déjà inscrit.', ratelimit:'Trop de tentatives. Réessayez.', paiement:'Erreur de paiement.'};
+        showPayError(msgs[d.error]||'Erreur de paiement.');
         btn.disabled=false;
         btn.innerHTML=origHtml;
-      });
-    });
-  } else {
-    form.addEventListener('submit',function(e){
-      if(!validateForm())e.preventDefault();
+      }
+    }).catch(function(){
+      showPayError('Erreur de connexion. Réessayez.');
+      btn.disabled=false;
+      btn.innerHTML=origHtml;
     });
   }
+
+  if(continueBtn){continueBtn.addEventListener('click', function(){doPayment(this);});}
+  else{form.addEventListener('submit', function(e){if(!validateForm())e.preventDefault();});}
+  var continueBtnMobile=document.getElementById('continueBtnMobile');
+  if(continueBtnMobile)continueBtnMobile.addEventListener('click', function(){doPayment(this);});
 })();
 </script>
 <script>
@@ -359,16 +403,33 @@ function onTurnstileExpired(){var h=document.getElementById('turnstile-hint');if
   var D=new Date('2026-11-01T00:00:00+01:00').getTime();
   var top=document.getElementById('insc-top-cd');
   function pad(n){return String(n).padStart(2,'0');}
-  function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  function set(id, v ){var e=document.getElementById(id);if(e)e.textContent=v;}
   function tick(){
     var r=D-Date.now();
     if(r<=0){if(top)top.style.display='none';return;}
-    set('ct-d',Math.floor(r/864e5));
-    set('ct-h',pad(Math.floor(r%864e5/36e5)));
-    set('ct-m',pad(Math.floor(r%36e5/6e4)));
-    set('ct-s',pad(Math.floor(r%6e4/1e3)));
+    set('ct-d', Math.floor(r/864e5));
+    set('ct-h', pad(Math.floor(r%864e5/36e5)));
+    set('ct-m', pad(Math.floor(r%36e5/6e4)));
+    set('ct-s', pad(Math.floor(r%6e4/1e3)));
   }
   tick();setInterval(tick,1000);
+})();
+(function(){
+  var btn=document.getElementById('flagMenuBtn');
+  var nav=document.getElementById('flagNav');
+  if(btn&&nav){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var open=nav.classList.toggle('open');
+      btn.setAttribute('aria-expanded',open?'true':'false');
+    });
+    document.addEventListener('click',function(e){
+      if(!nav.contains(e.target)&&e.target!==btn){
+        nav.classList.remove('open');
+        btn.setAttribute('aria-expanded','false');
+      }
+    });
+  }
 })();
 </script>
 </body>

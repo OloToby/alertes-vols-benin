@@ -32,6 +32,8 @@
 
 import { sendAdminNotifications, enqueueSubscriberAlert } from "./notify.js";
 import { legalPage } from "./pages/legal.js";
+import { diasporaPage } from "./pages/diaspora.js";
+import { handleDiasporaSearchLog, handleDiasporaSearchStats } from "./handlers/diasporaSearch.js";
 import { confirmationEmailHtml, welcomeEmailHtml, alertEmailHtml, shareEmailHtml } from "./pages/emails.js";
 import { COMMENT_IMAGES } from "./comment-images.js";
 import { serveStaticImage } from "./static-images.js";
@@ -45,11 +47,15 @@ import {
   handleCreateStripeSession,
   handleConfirm,
   handleUnsubscribe,
+  handleUnsubscribeConfirm,
+  handleUnsubscribeKeep,
   handleAdminStats,
   handleAdminPage,
   handleAdminAnalytics,
   processFanout,
+  getConfirmedCount,
 } from "./handlers/subscribers.js";
+import { handleDashboardPage, handleDashboardData, handleDashboardExport } from "./handlers/dashboard.js";
 
 // ── Clés KV ─────────────────────────────────────────────────────────────────
 const STATE_KEY             = "watch_state";
@@ -121,10 +127,37 @@ export default {
     }
 
     if (url.pathname === "/favicon.ico" || url.pathname === "/favicon.svg") {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#008751"/><text x="16" y="24" text-anchor="middle" font-size="22">✈</text></svg>`;
-      return new Response(svg, {
-        headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" },
-      });
+      return Response.redirect(new URL("/logo-icon.svg", url).href, 301);
+    }
+
+    if (url.pathname === "/robots.txt" && method === "GET") {
+      const robots = `User-agent: *
+Allow: /
+Disallow: /admin
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+Sitemap: https://alertesvolsbenin.com/sitemap.xml`;
+      return new Response(robots, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=86400" } });
     }
 
     if (url.pathname === "/sitemap.xml" && method === "GET") {
@@ -133,13 +166,19 @@ export default {
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>${base}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>${base}/inscription</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>${base}/inscription</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>${base}/diaspora</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 </urlset>`;
       return new Response(xml, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
     }
 
     if ((url.pathname === "/cgv" || url.pathname === "/mentions-legales") && method === "GET")
       return new Response(legalPage(), { headers: { "content-type": "text/html; charset=utf-8" } });
+
+    if (url.pathname === "/diaspora" && method === "GET") {
+      const count = await getConfirmedCount(env);
+      return new Response(diasporaPage(count), { headers: { "content-type": "text/html; charset=utf-8" } });
+    }
 
     if (url.pathname === "/" && method === "GET") {
       ctx.waitUntil(trackEvent(env, request, 'page_view'));
@@ -185,13 +224,77 @@ export default {
     if (url.pathname === "/unsubscribe" && method === "GET")
       return handleUnsubscribe(request, env);
 
+    if (url.pathname === "/unsubscribe" && method === "POST")
+      return handleUnsubscribeConfirm(request, env);
+
+    if (url.pathname === "/unsubscribe/keep" && method === "GET")
+      return handleUnsubscribeKeep(request, env);
+
     if (url.pathname === "/admin" && method === "GET")
       return handleAdminPage(request, env);
+
+    // Dashboard partenaire gouvernemental (auth côté client, page publique)
+    if (url.pathname === "/admin/dashboard" && method === "GET")
+      return handleDashboardPage();
+
+    // ── Email de réactivation (one-shot) ────────────────────────────────────
+    if (url.pathname === "/admin/send-reactivation" && method === "POST") {
+      const deny = requireAdmin(request, env);
+      if (deny) return deny;
+      try {
+        const { email, firstName, token } = await request.json();
+        const unsubUrl = `${env.APP_BASE_URL}/unsubscribe?token=${token}`;
+        const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:system-ui,sans-serif;background:#F8F6F1;margin:0;padding:24px"><div style="max-width:480px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid rgba(27,43,60,0.08)"><table width="100%" cellpadding="0" cellspacing="0" style="background:#1B2B3C;border-collapse:collapse"><tr><td style="padding:18px 24px"><table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><td style="vertical-align:middle"><table cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><td style="width:36px;height:36px;background:#008751;border-radius:8px;text-align:center;vertical-align:middle;font-size:20px;line-height:36px;color:#fff">✈</td><td style="padding-left:10px;font-family:Georgia,serif;font-size:15px;font-weight:600;color:rgba(255,255,255,0.90);letter-spacing:0.01em;vertical-align:middle;white-space:nowrap">Alertes Vols Bénin</td></tr></table></td><td style="text-align:right;vertical-align:middle"><table cellpadding="0" cellspacing="0" style="width:32px;height:22px;border-radius:4px;overflow:hidden;border-collapse:collapse;display:inline-table"><tr><td rowspan="2" style="width:40%;background:#008751"></td><td style="height:11px;background:#FCD116"></td></tr><tr><td style="height:11px;background:#E8112D"></td></tr></table></td></tr></table></td></tr></table><div style="background:#008751;padding:28px 24px;text-align:center"><div style="width:52px;height:52px;background:rgba(255,255,255,0.18);border-radius:50%;margin:0 auto 12px;text-align:center;line-height:52px;font-size:26px">✅</div><h1 style="color:#fff;margin:0;font-size:20px;font-weight:700;letter-spacing:-0.3px">Votre alerte est de nouveau active</h1></div><div style="padding:32px"><p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">Bonjour <strong style="color:#1B2B3C">${firstName}</strong>,</p><p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">Nous avons remarqué que votre inscription avait été annulée suite à un clic accidentel sur le lien de désinscription dans notre email de confirmation.</p><p style="color:#667888;line-height:1.7;margin:0 0 20px;font-size:15px"><strong style="color:#1B2B3C">Votre alerte est de nouveau active.</strong> Vous serez notifié dès que les vols Paris–Cotonou seront disponibles sur <strong style="color:#1B2B3C">voyage.benin.bj</strong>.</p><div style="background:rgba(0,135,81,0.06);border:1px solid rgba(0,135,81,0.14);border-radius:10px;padding:16px 20px;margin:0 0 24px"><p style="color:#1a5a3a;font-size:14px;line-height:1.6;margin:0;text-align:center">Aucune action de votre part n'est nécessaire.<br><strong>Votre Alerte est activée.</strong></p></div><p style="color:#667888;line-height:1.7;margin:0 0 4px;font-size:14px">Si vous souhaitez effectivement vous désinscrire, répondez simplement à cet email.</p><p style="color:#667888;line-height:1.7;margin:24px 0 0;font-size:14px">À très vite,<br><strong style="color:#1B2B3C">L'équipe Alertes Vols Bénin</strong></p></div><div style="padding:16px 24px;text-align:center;border-top:1px solid rgba(27,43,60,0.08)"><p style="color:#9BADB3;font-size:11px;margin:0 0 6px;line-height:1.5">Pour ne pas rater l'alerte, ajoute <strong>alertesvolsbenin@gmail.com</strong> à tes contacts.</p><a href="${unsubUrl}" style="color:#C5D0D8;font-size:11px;text-decoration:none">Me désinscrire</a></div><table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;height:4px"><tr><td style="background:#008751;width:25%"></td><td style="background:#FCD116;width:50%"></td><td style="background:#E8112D;width:25%"></td></tr></table></div></body></html>`;
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+          body: JSON.stringify({
+            from: env.ALERT_EMAIL_FROM,
+            to: [email],
+            subject: `${firstName}, votre alerte vols Bénin est de nouveau active ✈️`,
+            html,
+          }),
+        });
+        const body2 = await res.json();
+        return new Response(JSON.stringify({ ok: res.ok, status: res.status, resend: body2 }), {
+          headers: { "content-type": "application/json" },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: String(err) }), { status: 500, headers: { "content-type": "application/json" } });
+      }
+    }
+
+    if (url.pathname === "/admin/login" && method === "POST") {
+      if (!env.ADMIN_SECRET) return new Response("Admin not configured", { status: 503 });
+      const body = await request.json().catch(() => ({}));
+      if (body.secret !== env.ADMIN_SECRET) {
+        return new Response(JSON.stringify({ ok: false }), { status: 401, headers: { "content-type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "Set-Cookie": `avb_session=${env.ADMIN_SECRET}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=2592000`,
+        },
+      });
+    }
+
+    if (url.pathname === "/admin/logout" && method === "POST") {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "Set-Cookie": "avb_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0",
+        },
+      });
+    }
 
     // ── Endpoints admin protégés par ADMIN_SECRET ────────────────────────────
     if (
       (url.pathname === "/admin/subscribers" ||
         url.pathname === "/admin/analytics" ||
+        url.pathname === "/admin/dashboard/data" ||
+        url.pathname === "/admin/dashboard/export.csv" ||
         url.pathname === "/check" ||
         url.pathname === "/test-notify" ||
         url.pathname === "/test-emails" ||
@@ -208,6 +311,12 @@ export default {
 
       if (url.pathname === "/admin/analytics")
         return handleAdminAnalytics(request, env);
+
+      if (url.pathname === "/admin/dashboard/data")
+        return handleDashboardData(request, env);
+
+      if (url.pathname === "/admin/dashboard/export.csv")
+        return handleDashboardExport(request, env);
 
       if (url.pathname === "/check") {
         const result = await runCheck(env, { force: false });
@@ -381,6 +490,18 @@ export default {
       });
     }
 
+    // POST /api/diaspora-search — log requêtes sans résultat
+    if (url.pathname === "/api/diaspora-search" && method === "POST") {
+      return handleDiasporaSearchLog(request, env);
+    }
+
+    // GET /admin/diaspora-searches — stats pour l'admin
+    if (url.pathname === "/admin/diaspora-searches" && method === "GET") {
+      const deny = requireAdmin(request, env);
+      if (deny) return deny;
+      return handleDiasporaSearchStats(request, env);
+    }
+
     return new Response("Not found", { status: 404 });
   },
 
@@ -420,13 +541,14 @@ function requireAdmin(request, env) {
   }
   const auth = request.headers.get("Authorization") || "";
   const [type, token] = auth.split(" ");
-  if (type !== "Bearer" || token !== env.ADMIN_SECRET) {
-    return new Response("Unauthorized", {
-      status: 401,
-      headers: { "WWW-Authenticate": 'Bearer realm="Bénin Flight Watcher"' },
-    });
-  }
-  return null;
+  if (type === "Bearer" && token === env.ADMIN_SECRET) return null;
+  const cookie = request.headers.get("Cookie") || "";
+  const match = cookie.match(/avb_session=([^;]+)/);
+  if (match && match[1] === env.ADMIN_SECRET) return null;
+  return new Response("Unauthorized", {
+    status: 401,
+    headers: { "WWW-Authenticate": 'Bearer realm="Bénin Flight Watcher"' },
+  });
 }
 
 async function runCheck(env, { force }) {

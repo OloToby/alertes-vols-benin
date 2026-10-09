@@ -7,7 +7,7 @@ import { confirmEmailSentPage, messagePage, confirmationPage } from "../pages/si
 import { alertEmailHtml, confirmationEmailHtml, sendWelcomeEmail } from "../pages/emails.js";
 import { trackEvent } from "../analytics.js";
 
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX = 30;
 const RATE_LIMIT_TTL = 3600;
 
 // ---------------------------------------------------------------------------
@@ -92,9 +92,6 @@ async function _handleSubscribePost(request, env) {
     await trackEvent(env, request, 'form_error', { field: 'ratelimit' });
     return Response.redirect(new URL("/inscription?erreur=ratelimit", request.url).href, 303);
   }
-  try {
-    await env.STATE.put(hourKey, String(rateCount + 1), { expirationTtl: RATE_LIMIT_TTL });
-  } catch {}
 
   let data;
   try {
@@ -123,7 +120,7 @@ async function _handleSubscribePost(request, env) {
     await trackEvent(env, request, 'form_error', { field: 'nom' });
     return Response.redirect(new URL("/inscription?erreur=nom", request.url).href, 303);
   }
-  if (!isValidPhone(phone)) {
+  if (phone && !isValidPhone(phone)) {
     await trackEvent(env, request, 'form_error', { field: 'telephone' });
     return Response.redirect(new URL("/inscription?erreur=telephone", request.url).href, 303);
   }
@@ -151,6 +148,7 @@ async function _handleSubscribePost(request, env) {
       return htmlResponse(confirmEmailSentPage(email));
     }
     if (existing.status === "unsubscribed") {
+      try { await env.STATE.put(hourKey, String(rateCount + 1), { expirationTtl: RATE_LIMIT_TTL }); } catch {}
       await trackEvent(env, request, 'form_step1_success');
       if (env.STRIPE_SECRET_KEY) {
         try {
@@ -172,6 +170,7 @@ async function _handleSubscribePost(request, env) {
     }
   }
 
+  try { await env.STATE.put(hourKey, String(rateCount + 1), { expirationTtl: RATE_LIMIT_TTL }); } catch {}
   await trackEvent(env, request, 'form_step1_success');
 
   if (env.STRIPE_SECRET_KEY) {
@@ -293,7 +292,8 @@ export async function handleCreateStripeSession(request, env) {
     const lastName = (body.lastName || "").trim();
     const phone = (body.phone || "").trim();
     const smsConsent = body.smsConsent ? 1 : 0;
-    const turnstileToken = body.turnstileToken || "";
+    const utmSource = (body.utmSource || "").trim().slice(0, 40);
+    const turnstileToken = body.turnstileToken || null;
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       await trackEvent(env, request, 'form_error', { field: 'email' });
@@ -307,7 +307,7 @@ export async function handleCreateStripeSession(request, env) {
       await trackEvent(env, request, 'form_error', { field: 'nom' });
       return jsonApiError("nom", 400);
     }
-    if (!isValidPhone(phone)) {
+    if (phone && !isValidPhone(phone)) {
       await trackEvent(env, request, 'form_error', { field: 'telephone' });
       return jsonApiError("telephone", 400);
     }
@@ -320,7 +320,6 @@ export async function handleCreateStripeSession(request, env) {
       await trackEvent(env, request, 'form_error', { field: 'ratelimit' });
       return jsonApiError("ratelimit", 429);
     }
-    try { await env.STATE.put(hourKey, String(rateCount + 1), { expirationTtl: RATE_LIMIT_TTL }); } catch {}
 
     if (env.TURNSTILE_SECRET_KEY && turnstileToken) {
       const ok = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip);
@@ -336,12 +335,13 @@ export async function handleCreateStripeSession(request, env) {
       return jsonApiError("dejainscrit", 409);
     }
 
+    try { await env.STATE.put(hourKey, String(rateCount + 1), { expirationTtl: RATE_LIMIT_TTL }); } catch {}
     const session = await createStripeCheckoutSession(env, {
       email, phone, firstName, lastName, smsConsent,
       reactivate: existing?.status === "unsubscribed",
     });
 
-    await trackEvent(env, request, 'payment_initiated');
+    await trackEvent(env, request, 'payment_initiated', null, null, utmSource);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { "content-type": "application/json" },
@@ -385,6 +385,79 @@ export async function handleConfirm(request, env) {
 }
 
 export async function handleUnsubscribe(request, env) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token");
+  if (!token) return htmlResponse(messagePage("Erreur", "Token manquant."), 400);
+
+  const sub = await env.DB.prepare("SELECT status FROM subscribers WHERE token = ?")
+    .bind(token).first();
+
+  if (!sub) return htmlResponse(messagePage("Lien invalide", "Ce lien est invalide."), 404);
+  if (sub.status === "unsubscribed")
+    return htmlResponse(messagePage("Déjà désinscrit", "Tu étais déjà désinscrit. Tu ne recevras plus aucun email."));
+
+  const base = env.APP_BASE_URL || "";
+
+  // Page de confirmation — ne désincrit PAS encore
+  return htmlResponse(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Désinscription | Alertes Vols Bénin</title>
+  <link rel="icon" type="image/svg+xml" href="/logo-icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#F8F6F1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;border-radius:16px;overflow:hidden;max-width:420px;width:100%;border:1px solid rgba(27,43,60,0.08);box-shadow:0 4px 24px rgba(27,43,60,0.08)}
+    .header{background:#1B2B3C;padding:18px 24px;display:flex;align-items:center;justify-content:space-between}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .logo-icon{width:36px;height:36px;background:#008751;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .logo-text{font-size:14px;font-weight:600;color:rgba(255,255,255,0.9)}
+    .flag{width:28px;height:20px;border-radius:3px;overflow:hidden;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:1fr 1fr;flex-shrink:0}
+    .flag span:nth-child(1){grid-row:1/3;background:#008751}
+    .flag span:nth-child(2){background:#FCD116}
+    .flag span:nth-child(3){background:#E8112D}
+    .body{padding:36px 28px;text-align:center}
+    .icon{width:64px;height:64px;background:#fde8eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px}
+    h1{font-size:20px;font-weight:700;color:#1B2B3C;margin-bottom:10px}
+    .sub{font-size:14px;color:#667888;line-height:1.7;margin-bottom:28px}
+    .btn-yes{display:block;width:100%;padding:14px;background:#E8112D;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:12px;font-family:inherit}
+    .btn-no{display:block;width:100%;padding:14px;background:#e8f5ee;color:#005230;border:1px solid #c3e6d0;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;text-align:center}
+    .footer{padding:14px 24px;text-align:center;border-top:1px solid rgba(27,43,60,0.08)}
+    .footer p{color:#9BADB3;font-size:11px}
+    .tribar{height:4px;display:grid;grid-template-columns:1fr 2fr 1fr}
+    .tribar span:nth-child(1){background:#008751}
+    .tribar span:nth-child(2){background:#FCD116}
+    .tribar span:nth-child(3){background:#E8112D}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <a href="${base}/" class="logo">
+        <img src="/logo-icon.svg" alt="" style="width:36px;height:36px;border-radius:8px;display:block;flex-shrink:0">
+        <span class="logo-text">Alertes Vols Bénin</span>
+      </a>
+      <div class="flag"><span></span><span></span><span></span></div>
+    </div>
+    <div class="body">
+      <div class="icon">🔕</div>
+      <h1>Voulez-vous vraiment<br>vous désinscrire ?</h1>
+      <p class="sub">Vous ne recevrez plus d'alerte lorsque les vols Paris–Cotonou s'ouvriront sur <strong>voyage.benin.bj</strong>.<br><br>Les places partent en quelques minutes — vous risquez de les manquer.</p>
+      <form method="POST" action="${base}/unsubscribe?token=${encodeURIComponent(token)}">
+        <button type="submit" class="btn-yes">Oui, me désinscrire définitivement</button>
+      </form>
+      <a href="${base}/unsubscribe/keep?token=${encodeURIComponent(token)}" class="btn-no">Non, garder mon alerte active ✅</a>
+    </div>
+    <div class="footer"><p>Alertes Vols Bénin · alertesvolsbenin.com</p></div>
+    <div class="tribar"><span></span><span></span><span></span></div>
+  </div>
+</body>
+</html>`);
+}
+
+export async function handleUnsubscribeConfirm(request, env) {
   const token = new URL(request.url).searchParams.get("token");
   if (!token) return htmlResponse(messagePage("Erreur", "Token manquant."), 400);
 
@@ -397,12 +470,73 @@ export async function handleUnsubscribe(request, env) {
 
   await env.DB.prepare("UPDATE subscribers SET status='unsubscribed' WHERE token=?")
     .bind(token).run();
-
   await trackEvent(env, request, 'unsubscribed');
 
-  return htmlResponse(
-    messagePage("Désinscription confirmée", "Tu ne recevras plus d'alertes. Tu peux te réinscrire à tout moment depuis la page d'accueil.")
-  );
+  return htmlResponse(messagePage("Désinscription confirmée", "Tu ne recevras plus d'alertes. Tu peux te réinscrire à tout moment depuis la page d'accueil."));
+}
+
+export async function handleUnsubscribeKeep(request, env) {
+  const token = new URL(request.url).searchParams.get("token");
+  if (!token) return htmlResponse(messagePage("Lien invalide", "Ce lien est invalide."), 404);
+
+  const sub = await env.DB.prepare("SELECT status FROM subscribers WHERE token = ?")
+    .bind(token).first();
+  if (!sub) return htmlResponse(messagePage("Lien invalide", "Ce lien est invalide ou a expiré."), 404);
+
+  const base = env.APP_BASE_URL || "";
+
+  return htmlResponse(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Alerte active | Alertes Vols Bénin</title>
+  <link rel="icon" type="image/svg+xml" href="/logo-icon.svg">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#F8F6F1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;border-radius:16px;overflow:hidden;max-width:420px;width:100%;border:1px solid rgba(27,43,60,0.08);box-shadow:0 4px 24px rgba(27,43,60,0.08)}
+    .header{background:#1B2B3C;padding:18px 24px;display:flex;align-items:center;justify-content:space-between}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .logo-icon{width:36px;height:36px;background:#008751;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .logo-text{font-size:14px;font-weight:600;color:rgba(255,255,255,0.9)}
+    .flag{width:28px;height:20px;border-radius:3px;overflow:hidden;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:1fr 1fr;flex-shrink:0}
+    .flag span:nth-child(1){grid-row:1/3;background:#008751}
+    .flag span:nth-child(2){background:#FCD116}
+    .flag span:nth-child(3){background:#E8112D}
+    .body{padding:40px 28px;text-align:center}
+    .icon{width:72px;height:72px;background:#e8f5ee;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px}
+    h1{font-size:22px;font-weight:700;color:#1B2B3C;margin-bottom:12px}
+    .sub{font-size:14px;color:#667888;line-height:1.7;margin-bottom:28px}
+    .btn{display:inline-block;padding:14px 32px;background:#008751;color:#fff;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none}
+    .footer{padding:14px 24px;text-align:center;border-top:1px solid rgba(27,43,60,0.08)}
+    .footer p{color:#9BADB3;font-size:11px}
+    .tribar{height:4px;display:grid;grid-template-columns:1fr 2fr 1fr}
+    .tribar span:nth-child(1){background:#008751}
+    .tribar span:nth-child(2){background:#FCD116}
+    .tribar span:nth-child(3){background:#E8112D}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <a href="${base}/" class="logo">
+        <img src="/logo-icon.svg" alt="" style="width:36px;height:36px;border-radius:8px;display:block;flex-shrink:0">
+        <span class="logo-text">Alertes Vols Bénin</span>
+      </a>
+      <div class="flag"><span></span><span></span><span></span></div>
+    </div>
+    <div class="body">
+      <div class="icon">✅</div>
+      <h1>Votre alerte est toujours active !</h1>
+      <p class="sub">Parfait. Vous serez parmi les premiers prévenus dès que les vols Paris–Cotonou s'ouvriront sur <strong>voyage.benin.bj</strong>.<br><br>Les places partent en quelques minutes — vous avez bien fait de garder votre alerte.</p>
+      <a href="${base}/" class="btn">Retour à l'accueil</a>
+    </div>
+    <div class="footer"><p>Alertes Vols Bénin · alertesvolsbenin.com</p></div>
+    <div class="tribar"><span></span><span></span><span></span></div>
+  </div>
+</body>
+</html>`);
 }
 
 // ---------------------------------------------------------------------------
@@ -455,6 +589,7 @@ export async function handleAdminAnalytics(request, env) {
       env.DB.prepare(
         `SELECT event_name, COUNT(*) as n, COUNT(DISTINCT session_id) as uniq
          FROM analytics_events WHERE created_at >= ?
+         AND NOT (event_name='form_error' AND json_extract(metadata,'$.field') IN ('turnstile','ratelimit'))
          GROUP BY event_name ORDER BY n DESC`
       ).bind(since),
 
@@ -479,6 +614,7 @@ export async function handleAdminAnalytics(request, env) {
                 COUNT(*) as n
          FROM analytics_events
          WHERE created_at>=? AND event_name IN ('form_error','payment_error')
+         AND NOT (event_name='form_error' AND json_extract(metadata,'$.field') IN ('turnstile','ratelimit'))
          GROUP BY event_name, detail ORDER BY n DESC`
       ).bind(since),
 
@@ -542,6 +678,7 @@ export async function handleAdminAnalytics(request, env) {
       env.DB.prepare(
         `SELECT session_id, event_name, page, metadata, country, device, browser, referrer_type, created_at
          FROM analytics_events
+         WHERE NOT (event_name='form_error' AND json_extract(metadata,'$.field') IN ('turnstile','ratelimit'))
          ORDER BY created_at DESC
          LIMIT 50`
       ),
@@ -699,7 +836,7 @@ async function verifyTurnstile(secretKey, token, ip) {
   } catch { return false; }
 }
 
-async function getConfirmedCount(env) {
+export async function getConfirmedCount(env) {
   if (!env.DB) return 0;
   try {
     const row = await env.DB.prepare(

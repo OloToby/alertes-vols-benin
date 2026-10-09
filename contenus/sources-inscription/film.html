@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Inscription chronométrée</title>
+<!-- CONTRAT : window.DURATION · window.seek(t) pur · window.__ready · ?w=&h= -->
+<style>
+  @font-face { font-family: "SoraD"; src: url(fonts/sora-latin.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0000-00FF, U+0152-0153, U+2000-206F, U+20AC; }
+  @font-face { font-family: "SoraD"; src: url(fonts/sora-latin-ext.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0100-024F, U+1E00-1EFF; }
+  @font-face { font-family: "InterD"; src: url(fonts/inter-latin.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0000-00FF, U+0152-0153, U+2000-206F, U+20AC; }
+  @font-face { font-family: "InterD"; src: url(fonts/inter-latin-ext.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0100-024F, U+1E00-1EFF; }
+  :root { --deep:#1B2B3C; --bg:#F8F6F1; --muted:#667888; --green:#008751; --green2:#00A86B; --yellow:#FCD116; --red:#E8112D; }
+  html, body { margin:0; background:var(--bg); overflow:hidden; }
+  #stage { position:relative; overflow:hidden; background:var(--bg); font-family:"InterD", sans-serif; color:var(--deep); }
+  .abs { position:absolute; left:0; top:0; }
+  .h { font-family:"SoraD"; font-weight:700; letter-spacing:-0.02em; line-height:1.06; }
+  #rig { position:absolute; left:0; top:0; transform-origin:0 0; }
+  .phone { position:absolute; background:#0B0F14; box-shadow:0 40px 100px rgba(27,43,60,.30), inset 0 0 0 3px #2A3542; }
+  .screen { position:absolute; overflow:hidden; background:#000; }
+  .inner { position:absolute; left:0; top:0; width:390px; height:844px; transform-origin:0 0; overflow:hidden; background:#fff; }
+  .sbar { position:absolute; left:0; top:0; width:390px; height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 26px 0 32px; box-sizing:border-box; font:600 15px "InterD"; z-index:5; }
+  .island { position:absolute; left:50%; top:10px; width:118px; height:32px; margin-left:-59px; background:#000; border-radius:20px; z-index:6; }
+  .ubar { position:absolute; left:0; top:44px; width:390px; height:40px; display:flex; align-items:center; justify-content:center; z-index:5; }
+  .ubar .pill { height:30px; border-radius:10px; padding:0 14px; display:flex; align-items:center; gap:6px; font:500 14px "InterD"; }
+  .prog { position:absolute; left:0; bottom:0; height:3px; background:#2F80ED; }
+  iframe { position:absolute; left:0; top:84px; width:390px; height:760px; border:0; background:#fff; }
+  .page { position:absolute; left:0; top:84px; width:390px; height:760px; overflow:hidden; }
+  .tap { position:absolute; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:rgba(27,43,60,.28); border:2px solid rgba(255,255,255,.9); box-shadow:0 0 0 1px rgba(27,43,60,.25); z-index:20; pointer-events:none; }
+  /* paiement */
+  .pay { background:#F6F8FA; font-family:"InterD"; color:#1A2433; }
+  .pay .top { background:#fff; padding:18px 22px 20px; border-bottom:1px solid #E6EBF1; }
+  .pay .merchant { display:flex; align-items:center; gap:10px; font:600 14px "InterD"; color:#4A5566; }
+  .pay .mlogo { width:26px; height:26px; border-radius:6px; background:var(--green); display:flex; align-items:center; justify-content:center; }
+  .pay .amount { font:700 34px "InterD"; margin-top:14px; letter-spacing:-0.02em; }
+  .pay .desc { font:500 13px "InterD"; color:#6B7686; margin-top:4px; }
+  .pay .body { padding:18px 22px; }
+  .pay label { display:block; font:600 12px "InterD"; color:#4A5566; margin:14px 0 6px; }
+  .pay .f { background:#fff; border:1px solid #D9DFE7; border-radius:8px; height:42px; display:flex; align-items:center; padding:0 12px; font:500 15px "InterD"; color:#1A2433; box-sizing:border-box; }
+  .pay .f.ph { color:#A3ACB9; }
+  .pay .f.focus { border-color:#2F80ED; box-shadow:0 0 0 3px rgba(47,128,237,.18); }
+  .pay .grp .f { border-radius:0; }
+  .pay .grp .f:first-child { border-radius:8px 8px 0 0; }
+  .pay .row2 { display:flex; }
+  .pay .row2 .f { flex:1; border-top:0; }
+  .pay .row2 .f:first-child { border-radius:0 0 0 8px; border-right:0; }
+  .pay .row2 .f:last-child { border-radius:0 0 8px 0; }
+  .pay .btnp { margin-top:22px; height:48px; border-radius:8px; background:var(--deep); color:#fff; font:600 16px "InterD"; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .pay .foot { text-align:center; font:500 11.5px "InterD"; color:#8792A2; margin-top:14px; }
+  .chip { position:absolute; left:22px; right:22px; background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.18); padding:12px 14px; display:flex; align-items:center; gap:12px; font:600 14px "InterD"; z-index:8; }
+  .chip .cc { width:36px; height:24px; border-radius:4px; background:linear-gradient(135deg,#3C4B5E,#1B2B3C); }
+  /* habillage */
+  .timer { display:flex; align-items:center; gap:18px; background:#0B0F14; color:#fff; border-radius:999px; padding:14px 34px 14px 26px; box-shadow:0 14px 40px rgba(11,15,20,.25); }
+  .timer .dot { width:22px; height:22px; border-radius:50%; background:var(--red); }
+  .timer .num { font:700 64px "SoraD"; font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+  .cap { font:700 44px "SoraD"; letter-spacing:-0.02em; white-space:nowrap; background:#fff; border-radius:999px; padding:14px 32px; box-shadow:0 10px 30px rgba(27,43,60,.14); }
+  .cap b { color:var(--green); }
+  .stripe { display:flex; } .stripe i { display:block; height:100%; }
+  .stripe i:nth-child(1){flex:1;background:var(--green)} .stripe i:nth-child(2){flex:2;background:var(--yellow)} .stripe i:nth-child(3){flex:1;background:var(--red)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="rig">
+    <div class="phone" id="phone"><div class="screen" id="screen"><div class="inner" id="inner">
+      <div class="sbar" id="sbar"><span>10:42</span><span style="display:flex;gap:6px;align-items:center">
+        <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+        <svg width="26" height="13" viewBox="0 0 26 13"><rect x=".5" y=".5" width="22" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="15" height="8" rx="2" fill="currentColor"/><rect x="24" y="4.5" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".5"/></svg></span></div>
+      <div class="island"></div>
+      <div class="ubar" id="ubar"><div class="pill" id="upill"><svg width="11" height="13" viewBox="0 0 11 13"><rect x="1" y="5.5" width="9" height="7" rx="1.5" fill="currentColor"/><path d="M3 5.5V4a2.5 2.5 0 0 1 5 0v1.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg><span id="utext">https://alertesvolsbenin.com/</span></div><div class="prog" id="prog"></div></div>
+      <iframe id="fL" src="landing.html"></iframe>
+      <iframe id="fI" src="inscription.html"></iframe>
+      <div class="page pay" id="pay">
+        <div class="top">
+          <div class="merchant"><div class="mlogo"><svg width="16" height="16" viewBox="-128 -128 256 256"><path d="M0,-120C8,-116 14,-104 14,-88L14,-40L120,-16L120,8L14,24L14,72L56,100L56,116L0,92L-56,116L-56,100L-14,72L-14,24L-120,8L-120,-16L-14,-40L-14,-88C-14,-104 -8,-116 0,-120Z" fill="#fff"/></svg></div>Alertes Vols Bénin</div>
+          <div class="amount">5,99 €</div>
+          <div class="desc">Alerte vols Paris-Cotonou · paiement unique</div>
+        </div>
+        <div class="body">
+          <label>E-mail</label><div class="f" id="pEmail">rodrigue@exemple.fr</div>
+          <label>Informations de la carte</label>
+          <div class="grp"><div class="f ph" id="pCard">1234 1234 1234 1234</div>
+            <div class="row2"><div class="f ph" id="pExp">MM / AA</div><div class="f ph" id="pCvc">CVC</div></div></div>
+          <label>Nom du titulaire de la carte</label><div class="f ph" id="pName">Nom complet</div>
+          <div class="btnp" id="pBtn">Payer 5,99 €</div>
+          <div class="foot">Paiement traité par Stripe · Visa, Mastercard, CB</div>
+        </div>
+        <div class="chip" id="chip"><div class="cc"></div><div><div>Carte enregistrée</div><div style="font-weight:500;color:#6B7686;font-size:13px">•••• 4242 · exp. 09/29</div></div></div>
+      </div>
+      <iframe id="fC" src="confirmation.html"></iframe>
+      <div class="tap" id="tap"></div>
+    </div></div></div>
+  </div>
+  <div class="abs" id="hook"><div class="h" style="font-size:64px;text-align:center;width:960px">S’inscrire prend moins<br>de temps que <span style="color:var(--green)">cette vidéo.</span></div></div>
+  <div class="abs" id="cap"><div class="cap" id="capText"></div></div>
+  <div class="abs" id="timer"><div class="timer"><div class="dot" id="dot"></div><div class="num" id="tnum">00:00,0</div></div></div>
+  <div class="abs" id="note" style="font:500 22px InterD;color:var(--muted)">Écran de paiement simplifié</div>
+  <!-- carte de fin -->
+  <div class="abs" id="end" style="width:1080px;height:1920px;background:var(--bg)">
+    <div class="abs" id="eT" style="width:1080px;text-align:center;top:330px"><div class="h" style="font-size:150px;color:var(--deep);white-space:nowrap" id="eNum">19 s</div></div>
+    <div class="abs" id="eS" style="width:1080px;text-align:center;top:540px"><div class="h" style="font-size:64px">Inscription terminée.<br><span style="color:var(--green)">Alerte activée.</span></div></div>
+    <div class="abs" id="eP" style="width:1080px;text-align:center;top:860px"><div style="display:inline-block;background:#fff;border-radius:28px;padding:30px 44px;box-shadow:0 2px 24px rgba(27,43,60,.10)">
+      <div class="h" style="font-size:58px">5,99 € jusqu’au 31 octobre</div>
+      <div style="font:500 34px InterD;color:var(--muted);margin-top:12px">puis 9,99 € à partir du 1<sup>er</sup> novembre</div></div></div>
+    <div class="abs" id="eU" style="width:1080px;text-align:center;top:1150px"><div style="display:inline-flex;align-items:center;gap:22px">
+      <div style="width:96px;height:96px;border-radius:22px;background:var(--green);display:flex;align-items:center;justify-content:center"><svg width="58" height="58" viewBox="-128 -128 256 256"><path d="M0,-120C8,-116 14,-104 14,-88L14,-40L120,-16L120,8L14,24L14,72L56,100L56,116L0,92L-56,116L-56,100L-14,72L-14,24L-120,8L-120,-16L-14,-40L-14,-88C-14,-104 -8,-116 0,-120Z" fill="#fff"/></svg></div>
+      <div class="h" style="font-size:50px">https://alertesvolsbenin.com/</div></div></div>
+    <div class="abs" id="eL" style="width:1080px;text-align:center;top:1330px"><div style="font:500 28px InterD;color:#51606E;width:840px;margin:0 auto;line-height:1.4">Service indépendant, non affilié au Gouvernement du Bénin ni à Bénin Tours S.A. Nous ne vendons pas de billets.</div></div>
+    <div class="abs stripe" style="top:1906px;width:1080px;height:14px"><i></i><i></i><i></i></div>
+  </div>
+</div>
+<script src="motion-kit.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const W = 1080, H = 1920;
+const stage = document.getElementById("stage"); stage.style.width = W + "px"; stage.style.height = H + "px";
+const { clamp, lerp, spring, track, ease, tween, typed } = MK;
+window.DURATION = 30;
+const $ = (id) => document.getElementById(id);
+
+/* géométrie du téléphone */
+const S = 1.66, BZ = 16, SW = 390 * S, SH = 844 * S, PX = (W - SW) / 2 - BZ, PY = 372;
+Object.assign($("phone").style, { left: PX + "px", top: PY + "px", width: SW + 2 * BZ + "px", height: SH + 2 * BZ + "px", borderRadius: 64 * S / 1.2 + "px" });
+Object.assign($("screen").style, { left: BZ + "px", top: BZ + "px", width: SW + "px", height: SH + "px", borderRadius: 48 * S + "px" });
+$("inner").style.transform = `scale(${S})`;
+// point écran (px CSS 390x844) -> coordonnées cadre (zoom 1)
+const toFrame = (x, y) => [PX + BZ + x * S, PY + BZ + y * S];
+
+/* chronologie */
+const T = { start: 1.5, toInsc: 2.45, scrollA: 3.0, scrollB: 3.55, SCROLL: 600,
+  fields: [["first_name", 3.75, "Rodrigue", 6], ["last_name", 5.6, "Dossou", 6], ["email", 7.1, "rodrigue@exemple.fr", 7.5], ["phone", 10.35, "+33 6 12 34 56 78", 7.5]],
+  submit: 13.3, toPay: 14.5, cardTap: 15.2, chipShow: 15.35, chipTap: 15.9, cvcTap: 16.45, cvcType: 16.55, payTap: 17.6, payOk: 19.4, toConf: 20.65, end: 24.6 };
+const ELAPSED_END = T.toConf - T.start;
+
+let FR = {}, ORIG = {};
+function rectIn(frame, sel) { const e = frame.contentDocument.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 + 84, w: r.width, h: r.height }; }
+function payRect(id) { const e = $(id), r = e.getBoundingClientRect(), ir = $("inner").getBoundingClientRect(); return { x: (r.x - ir.x) / (S * camZ) + r.width / (2 * S * camZ), y: (r.y - ir.y) / (S * camZ) + r.height / (2 * S * camZ) }; }
+let camZ = 1;
+
+/* position fixe des cibles (page inscription défilée de SCROLL) */
+const TG = {};
+function measure() {
+  const fI = $("fI"), w = fI.contentWindow;
+  w.scrollTo(0, T.SCROLL);
+  for (const [id] of T.fields) TG[id] = rectIn(fI, "#" + id);
+  TG.btn = rectIn(fI, "#continueBtnMobile");
+  w.scrollTo(0, 0);
+  const fL = $("fL"); const a = [...fL.contentDocument.querySelectorAll("a")].find((x) => /inscrire/i.test(x.textContent));
+  const r = a.getBoundingClientRect(); TG.cta = { x: r.x + r.width / 2, y: r.y + r.height / 2 + 84 };
+  // page paiement : positions dans la page (top 84)
+  const pr = (id) => { const e = $(id); let y = 0, x = 0, n = e; while (n && n.id !== "pay") { y += n.offsetTop; x += n.offsetLeft; n = n.offsetParent; } return { x: x + e.offsetWidth / 2, y: y + e.offsetHeight / 2 + 84 }; };
+  TG.pCard = pr("pCard"); TG.pCvc = pr("pCvc"); TG.pBtn = pr("pBtn");
+  TG.chip = { x: 195, y: TG.pCard.y - 84 - 70 + 84 };
+  const fC = $("fC"); const h = [...fC.contentDocument.querySelectorAll("h1,h2,h3")].find((x) => /confirm/i.test(x.textContent));
+  TG.conf = h ? (() => { const r = h.getBoundingClientRect(); return { x: 195, y: r.y + r.height / 2 + 84 }; })() : { x: 195, y: 430 };
+}
+
+/* taps : [instant, cible] */
+function taps() { return [[T.start, TG.cta], ...T.fields.map(([id, t0]) => [t0 - 0.12, TG[id]]), [T.submit, TG.btn], [T.cardTap, TG.pCard], [T.chipTap, TG.chip], [T.cvcTap, TG.pCvc], [T.payTap, TG.pBtn]]; }
+
+function fmt(s) { const m = Math.floor(s / 60), r = s - m * 60; return String(m).padStart(2, "0") + ":" + r.toFixed(1).padStart(4, "0").replace(".", ","); }
+
+function setPage(t) {
+  const L = t < T.toInsc, I = t >= T.toInsc && t < T.toPay, P = t >= T.toPay && t < T.toConf, C = t >= T.toConf;
+  $("fL").style.visibility = L ? "visible" : "hidden"; $("fI").style.visibility = I ? "visible" : "hidden";
+  $("pay").style.visibility = P ? "visible" : "hidden"; $("fC").style.visibility = C ? "visible" : "hidden";
+  // barre d'état / URL selon la page (sombre sur pages à fond sombre)
+  const dark = L || I || C;
+  $("sbar").style.background = dark ? "#0E1620" : "#fff"; $("sbar").style.color = dark ? "#fff" : "#111";
+  $("ubar").style.background = dark ? "#0E1620" : "#fff";
+  $("upill").style.background = dark ? "rgba(255,255,255,.12)" : "#EEF1F4"; $("upill").style.color = dark ? "#fff" : "#111";
+  $("utext").textContent = P ? "Paiement sécurisé" : "https://alertesvolsbenin.com/";
+  // barre de chargement
+  const loads = [[T.start + .1, T.toInsc], [T.submit + .1, T.toPay], [T.payOk + .3, T.toConf]];
+  let pg = 0; for (const [a, b] of loads) if (t >= a && t < b) pg = ease.outCubic(clamp((t - a) / (b - a))) * .92;
+  $("prog").style.width = pg * 100 + "%"; $("prog").style.opacity = pg > 0 ? 1 : 0;
+}
+
+function setInscription(t) {
+  const fI = $("fI"), w = fI.contentWindow, d = fI.contentDocument;
+  w.__NOW = NOW0 + t * 1000; w.__tick && w.__tick();
+  const sc = t < T.scrollA ? 0 : T.SCROLL * ease.inOutCubic(clamp((t - T.scrollA) / (T.scrollB - T.scrollA)));
+  w.scrollTo(0, sc);
+  let focus = null;
+  for (let i = 0; i < T.fields.length; i++) {
+    const [id, t0, txt, cps] = T.fields[i], el = d.getElementById(id);
+    el.value = t >= t0 ? typed(t, t0 + .12, txt, cps, 3 + i) : "";
+    const next = T.fields[i + 1] ? T.fields[i + 1][1] - .12 : T.submit;
+    if (t >= t0 - .12 && t < next) focus = el;
+  }
+  if (focus) { if (d.activeElement !== focus) focus.focus({ preventScroll: true }); w.scrollTo(0, sc); }
+  else if (d.activeElement && d.activeElement.blur) d.activeElement.blur();
+  const b = d.getElementById("continueBtnMobile");
+  const spin = t >= T.submit + .05;
+  const want = spin ? "spin" : "orig";
+  if (b.dataset.st !== want) { b.innerHTML = spin ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Redirection en cours...' : ORIG.btn; b.dataset.st = want; }
+  if (spin) b.querySelector("svg").style.transform = `rotate(${(t - T.submit) * 400}deg)`;
+  b.style.opacity = spin ? .85 : 1;
+}
+
+function setPay(t) {
+  const filled = t >= T.chipTap + .08;
+  const set = (id, v, ph) => { const e = $(id); e.textContent = v; e.classList.toggle("ph", !!ph); };
+  set("pCard", filled ? "4242 4242 4242 4242" : "1234 1234 1234 1234", !filled);
+  set("pExp", filled ? "09 / 29" : "MM / AA", !filled);
+  set("pName", filled ? "Rodrigue Dossou" : "Nom complet", !filled);
+  const cv = t >= T.cvcType ? typed(t, T.cvcType, "123", 6, 9) : "";
+  set("pCvc", cv || "CVC", !cv);
+  $("pCard").classList.toggle("focus", t >= T.cardTap - .1 && t < T.cvcTap - .1);
+  $("pCvc").classList.toggle("focus", t >= T.cvcTap - .1 && t < T.payTap);
+  const ch = $("chip"), kc = spring(t - T.chipShow, .35, .8), out = clamp((t - T.chipTap - .1) / .15);
+  ch.style.top = (TG.pCard.y - 84 - 118) + "px";
+  ch.style.opacity = t >= T.chipShow ? clamp((t - T.chipShow) / .1) * (1 - out) : 0;
+  ch.style.transform = `translateY(${(1 - kc) * 14}px) scale(${.96 + .04 * kc})`;
+  const btn = $("pBtn");
+  if (t < T.payTap + .05) { btn.innerHTML = "Payer 5,99 €"; btn.style.background = "var(--deep)"; }
+  else if (t < T.payOk) { btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" style="transform:rotate(${(t - T.payTap) * 420}deg)"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`; btn.style.background = "var(--deep)"; }
+  else { const k = spring(t - T.payOk, .35, .7); btn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" style="transform:scale(${k})"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> Paiement accepté`; btn.style.background = "var(--green)"; }
+}
+
+const NOW0 = new Date("2026-10-05T10:42:00+02:00").getTime();
+
+/* caméra : point visé (coord. écran CSS) + zoom */
+function camKeys() {
+  const C0 = { x: 195, y: 422 };
+  const k = (t, p, z) => [t, [p.x, p.y, z]];
+  return [k(0, C0, 1), k(T.scrollB, C0, 1), ...T.fields.map(([id, t0]) => k(t0 - .3, TG[id], 1.55)), k(T.submit - .45, { x: 195, y: TG.btn.y - 60 }, 1.3), k(T.toPay - .1, C0, 1),
+    k(T.cardTap - .35, { x: 195, y: TG.pCard.y - 40 }, 1.5), k(T.payTap - .4, { x: 195, y: TG.pBtn.y - 40 }, 1.5), k(T.payOk + .6, C0, 1), k(T.toConf + .7, TG.conf, 1.45), k(T.end - 1.0, C0, 1)];
+}
+function cam(t, keys) {
+  const comp = (i) => track(t, keys.map(([tt, v]) => [tt, v[i]]), { response: .7, damping: 1 });
+  return [comp(0), comp(1), comp(2)];
+}
+let KEYS;
+
+window.seek = function (t) {
+  setPage(t);
+  if (t < T.toInsc) { const w = $("fL").contentWindow; w.__NOW = NOW0 + t * 1000; w.__tick && w.__tick(); }
+  if (t >= T.toInsc - .05 && t < T.toPay) setInscription(t);
+  if (t >= T.toPay - .05 && t < T.toConf) setPay(t);
+  // caméra
+  let [cx, cy, z] = cam(t, KEYS);
+  const endK = ease.inOutCubic(clamp((t - T.end) / .55));
+  camZ = z;
+  const [fx, fy] = toFrame(cx, cy);
+  const AX = 540, AY = 1010;
+  const blend = clamp((z - 1) / .55);
+  const X = lerp(fx - fx * z, AX - fx * z, blend), Y = lerp(fy - fy * z, AY - fy * z, blend);
+  $("rig").style.transform = `translate(${X * (1 - endK) }px,${Y - endK * 300}px) scale(${z})`;
+  // tap
+  let tp = null; for (const [tt, g] of taps()) if (t >= tt && t < tt + .35 && g) tp = [tt, g];
+  const tap = $("tap");
+  if (tp) { const p = (t - tp[0]) / .35; tap.style.display = ""; tap.style.left = tp[1].x + "px"; tap.style.top = tp[1].y + "px"; tap.style.opacity = 1 - p * p; tap.style.transform = `scale(${.7 + .5 * ease.outCubic(p)})`; }
+  else tap.style.display = "none";
+  // habillage : accroche, légendes, chrono
+  const hk = $("hook"), hIn = spring(t - .05, .5, .85), hOut = ease.inOutCubic(clamp((t - 2.9) / .3));
+  hk.style.opacity = clamp(t / .2) * (1 - hOut); hk.style.transform = `translate(60px,${160 + (1 - hIn) * 40 - hOut * 30}px)`;
+  const caps = [[3.05, T.toPay - .15, "<b>1</b> · Vos infos"], [T.toPay, T.toConf - .15, "<b>2</b> · Paiement"], [T.toConf, T.end, "<b>3</b> · Alerte activée"]];
+  let c = null; for (const cc of caps) if (t >= cc[0] && t < cc[1] + .2) c = cc;
+  const cap = $("cap");
+  if (c) { const ki = spring(t - c[0], .45, .85), ko = ease.inOutCubic(clamp((t - c[1]) / .2)); $("capText").innerHTML = c[2]; cap.style.opacity = clamp((t - c[0]) / .12) * (1 - ko);
+    const cw = $("capText").offsetWidth; cap.style.transform = `translate(${540 - cw / 2}px,${168 + (1 - ki) * 30}px)`; } else cap.style.opacity = 0;
+  const el = clamp(t - T.start, 0, ELAPSED_END);
+  $("tnum").textContent = fmt(el);
+  const tm = $("timer"), tIn = spring(t - T.start + .25, .45, .8), stop = t >= T.toConf;
+  const tw = tm.firstChild.offsetWidth;
+  const pulse = stop ? 1 + .08 * Math.exp(-(t - T.toConf) * 5) * Math.sin(clamp((t - T.toConf) * 9, 0, Math.PI)) : 1;
+  tm.style.opacity = clamp((t - T.start + .25) / .15) * (1 - endK);
+  tm.style.transform = `translate(${540 - tw / 2}px,${(t < 3.2 ? 318 : lerp(318, 278, ease.inOutCubic(clamp((t - 3.2) / .4)))) + (1 - tIn) * 30}px) scale(${pulse})`;
+  tm.style.transformOrigin = `${tw / 2}px 50px`;
+  $("dot").style.background = stop ? "var(--green)" : "var(--red)";
+  $("dot").style.opacity = stop ? 1 : (Math.floor((t - T.start) * 2) % 2 ? .35 : 1);
+  const nt = $("note"); nt.style.opacity = t >= T.toPay + .2 && t < T.toConf - .1 ? .9 : 0; nt.style.transform = `translate(${540 - nt.offsetWidth / 2}px,1872px)`;
+  // fin
+  const en = $("end");
+  if (t >= T.end) {
+    en.style.display = ""; en.style.transform = `translateY(${(1 - ease.outCubic(clamp((t - T.end) / .5))) * H}px)`;
+    $("eNum").textContent = Math.round(ELAPSED_END) + " secondes";
+    const up = (id, t0) => { const k = spring(t - t0, .5, .84); $(id).style.opacity = clamp((t - t0) / .15); $(id).style.transform = `translateY(${(1 - k) * 50}px)`; };
+    up("eT", T.end + .35); up("eS", T.end + .6); up("eP", T.end + 1.0); up("eU", T.end + 1.3); up("eL", T.end + 1.5);
+  } else en.style.display = "none";
+};
+
+function ready(f) { return new Promise((r) => { if (f.contentDocument && f.contentDocument.readyState === "complete") r(); else f.addEventListener("load", r, { once: true }); }); }
+Promise.all([document.fonts.ready, ...["fL", "fI", "fC"].map((id) => ready($(id)))]).then(async () => {
+  for (const id of ["fL", "fI", "fC"]) await $(id).contentDocument.fonts.ready;
+  ORIG.btn = $("fI").contentDocument.getElementById("continueBtnMobile").innerHTML;
+  measure(); KEYS = camKeys();
+  window.seek(0); window.__ready = true;
+});
+if (!q.get("render")) { const t0 = performance.now(); (function loop() { if (KEYS) window.seek(((performance.now() - t0) / 1000) % window.DURATION); requestAnimationFrame(loop); })(); }
+</script>
+</body>
+</html>

@@ -1,15 +1,15 @@
 import { escapeHtml } from "../notify.js";
 
 // ---------------------------------------------------------------------------
-// Shell commun — header, footer, barre tricolore identiques sur les 3 emails
+// Shell commun, header, footer, barre tricolore identiques sur les 3 emails
 // ---------------------------------------------------------------------------
 
 function emailShell(bannerHtml, bodyHtml, unsubscribeUrl = null) {
   return `<!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="font-family:system-ui,sans-serif;background:#F8F6F1;margin:0;padding:24px">
-  <div style="max-width:480px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid rgba(27,43,60,0.08)">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="font-family:system-ui,s ans-serif;background:#F8F6F1;margin:0;padding:24px">
+  <div style="max-width:480px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid rgba(27,43,60,0 .08)">
 
     <!-- HEADER unifié -->
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#1B2B3C;border-collapse:collapse">
@@ -21,8 +21,8 @@ function emailShell(bannerHtml, bodyHtml, unsubscribeUrl = null) {
               <td style="vertical-align:middle">
                 <table cellpadding="0" cellspacing="0" style="border-collapse:collapse">
                   <tr>
-                    <td style="width:36px;height:36px;background:#008751;border-radius:8px;text-align:center;vertical-align:middle;font-size:20px;line-height:36px;color:#fff">✈</td>
-                    <td style="padding-left:10px;font-family:Georgia,serif;font-size:15px;font-weight:600;color:rgba(255,255,255,0.90);letter-spacing:0.01em;vertical-align:middle;white-space:nowrap">Alertes Vols Bénin</td>
+                    <td style="width:36px;height:36px;border-radius:8px;overflow:hidden;vertical-align:middle"><img src="https://alertesvolsbenin.com/logo-icon.svg" width="36" height="36" style="display:block;border-radius:8px" alt=""></td>
+                    <td style="padding-left:10px;font-family:Georgia,serif;font-size:15px;font-weight:600;color:rgba(255,255,255,0 .90);letter-spacing:0.01em;vertical-align:middle;white-space:nowrap">Alertes Vols Bénin</td>
                   </tr>
                 </table>
               </td>
@@ -53,7 +53,7 @@ function emailShell(bannerHtml, bodyHtml, unsubscribeUrl = null) {
     </div>
 
     <!-- FOOTER -->
-    <div style="padding:16px 24px;text-align:center;border-top:1px solid rgba(27,43,60,0.08)">
+    <div style="padding:16px 24px;text-align:center;border-top:1px solid rgba(27,43,60,0 .08)">
       <p style="color:#9BADB3;font-size:11px;margin:0 0 6px;line-height:1.5">Pour ne pas rater l'alerte, ajoute <strong>alertesvolsbenin@gmail.com</strong> à tes contacts.</p>
       ${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color:#C5D0D8;font-size:11px;text-decoration:none">Me désinscrire</a>` : ''}
     </div>
@@ -73,13 +73,13 @@ function emailShell(bannerHtml, bodyHtml, unsubscribeUrl = null) {
 }
 
 // ---------------------------------------------------------------------------
-// Email 1 — Confirmation d'inscription
+// Email 1, Confirmation d'inscription
 // ---------------------------------------------------------------------------
 
 export function confirmationEmailHtml(confirmUrl) {
   const banner = `
     <div style="background:#008751;padding:28px 24px;text-align:center">
-      <div style="width:52px;height:52px;background:rgba(255,255,255,0.18);border-radius:50%;margin:0 auto 12px;text-align:center;line-height:52px;font-size:26px">✉️</div>
+      <div style="width:52px;height:52px;background:rgba(255,255,255,0 .18);border-radius:50%;margin:0 auto 12px;text-align:center;line-height:52px;font-size:26px">✉️</div>
       <h1 style="color:#fff;margin:0;font-size:20px;font-weight:700;letter-spacing:-0.3px">Confirme ton adresse email</h1>
     </div>`;
 
@@ -95,7 +95,7 @@ export function confirmationEmailHtml(confirmUrl) {
 }
 
 // ---------------------------------------------------------------------------
-// Email 2 — Bienvenue après paiement
+// Email 2, Bienvenue après paiement
 // ---------------------------------------------------------------------------
 
 export function welcomeEmailHtml(firstName, lastName, unsubscribeUrl, shareUrl) {
@@ -115,7 +115,7 @@ export function welcomeEmailHtml(firstName, lastName, unsubscribeUrl, shareUrl) 
     <p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">Ton paiement est passé, ton alerte est active. Y'a plus qu'à attendre l'ouverture.</p>
     <p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">Concrètement : dès que <strong style="color:#1B2B3C">voyage.benin.bj</strong> ouvre les réservations des vols Paris-Cotonou, on t'envoie un <strong style="color:#1B2B3C">email + SMS</strong> dans la foulée. Pas besoin de rafraîchir le site 50 fois par jour.</p>
     <p style="color:#667888;line-height:1.7;margin:0 0 14px;font-size:15px">Pour rappel, en décembre dernier les places sont parties en quelques minutes. Cette fois, tu seras dans les premiers prévenus.</p>
-    <div style="background:rgba(0,135,81,0.06);border:1px solid rgba(0,135,81,0.14);border-radius:10px;padding:16px;margin:20px 0;text-align:center">
+    <div style="background:rgba(0,135,81,0.06);border:1px solid rgba(0,1 35,81,0 .14);border-radius:10px;padding:16px;margin:20px 0;text-align:center">
       <p style="color:#1a5a3a;font-size:14px;line-height:1.6;margin:0 0 14px"><strong>Passe le mot à tes proches pour voyager ensemble !</strong><br>Plus on est nombreux à être alertés, moins on rate le coche.</p>
       <a href="https://wa.me/?text=${waText}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;margin:4px" target="_blank">WhatsApp</a>
       <a href="https://www.facebook.com/sharer/sharer.php?u=${fbUrl}" style="display:inline-block;background:#1877F2;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;margin:4px" target="_blank">Facebook</a>
@@ -126,7 +126,7 @@ export function welcomeEmailHtml(firstName, lastName, unsubscribeUrl, shareUrl) 
 }
 
 // ---------------------------------------------------------------------------
-// Email 3 — Alerte vol ouvert
+// Email 3, Alerte vol ouvert
 // ---------------------------------------------------------------------------
 
 export function alertEmailHtml(personalMessage, unsubscribeUrl) {
@@ -134,7 +134,7 @@ export function alertEmailHtml(personalMessage, unsubscribeUrl) {
     <div style="background:#E8112D;padding:28px 24px;text-align:center">
       <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 auto 14px">
         <tr>
-          <td style="width:56px;height:56px;background:#008751;border-radius:12px;text-align:center;vertical-align:middle;font-size:32px;line-height:56px;color:#fff">✈</td>
+          <td style="width:56px;height:56px;border-radius:12px;overflow:hidden;vertical-align:middle"><img src="https://alertesvolsbenin.com/logo-icon.svg" width="56" height="56" style="display:block;border-radius:12px" alt=""></td>
         </tr>
       </table>
       <h1 style="color:#fff;margin:0;font-size:26px;font-weight:700;letter-spacing:-0.5px">Les vols sont OUVERTS !</h1>
@@ -151,7 +151,7 @@ export function alertEmailHtml(personalMessage, unsubscribeUrl) {
 }
 
 // ---------------------------------------------------------------------------
-// Email 4 — Campagne partage
+// Email 4, Campagne partage
 // ---------------------------------------------------------------------------
 
 export function shareEmailHtml(firstName, unsubscribeUrl) {
@@ -190,7 +190,7 @@ export function shareEmailHtml(firstName, unsubscribeUrl) {
 export async function sendWelcomeEmail(env, email, firstName, lastName, token) {
   if (!env.RESEND_API_KEY || !env.ALERT_EMAIL_FROM) return { ok: true, skipped: true };
   const unsubscribeUrl = `${env.APP_BASE_URL}/unsubscribe?token=${token}`;
-  const shareUrl = `${env.APP_BASE_URL}/inscription`;
+  const shareUrl = `${env.APP_BASE_URL}/inscription?utm_source=whatsapp&utm_medium=referral&utm_campaign=welcome`;
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

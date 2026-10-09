@@ -1,5 +1,6 @@
 import { escapeHtml } from "../notify.js";
 import { pageShell, shareFabHtml } from "./shared.js";
+import { FONT_CSS } from "../fonts.js";
 
 export function confirmEmailSentPage(email) {
   return pageShell(
@@ -52,14 +53,11 @@ export function confirmationPage(priceDisplay, baseUrl) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inscription confirmée | Alertes Vols Bénin</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23008751'/%3E%3Ctext x='16' y='24' text-anchor='middle' font-size='22'%3E✈%3C/text%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{--deep:#1B2B3C;--accent:#e8112d;--bg:#F8F6F1;--bg2:#FFFFFF;--muted:#667888;--line:rgba(27,43,60,0.10);--flag-green:#008751;--flag-yellow:#FCD116;--flag-red:#E8112D;--font-display:'Sora',ui-sans-serif,system-ui,sans-serif;--font-body:'Inter',ui-sans-serif,system-ui,sans-serif;--slide-dur:70s}
+  <link rel="icon" type="image/svg+xml" href="/logo-icon.svg">
+  <style>${FONT_CSS}
+    :root{--deep:#1B2B3C;--accent:#e8112d;--bg:#F8F6F1;--bg2:#FFFFFF;--muted:#667888;--line:rgba(27,43,60,0.10);--flag-green:#008751;--flag-yellow:#FCD116;--flag-red:#E8112D;--font-display:'Sora',ui-sans-serif,system-ui,sans-serif;--font-body:'Sora',ui-sans-serif,system-ui,sans-serif;--slide-dur:70s}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{overflow-x:hidden}
+    html{}
     body{font-family:var(--font-body);color:var(--deep);background:linear-gradient(to bottom,#0d1a10,#111f13);min-height:100svh;display:flex;flex-direction:column;overflow-x:hidden}
 
     .slideshow{position:fixed;inset:0;z-index:-2;overflow:hidden}
@@ -75,10 +73,26 @@ export function confirmationPage(priceDisplay, baseUrl) {
     .wordmark{display:inline-flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
     .wordmark-icon{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1}
     .wordmark-label{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:0.01em;color:rgba(255,255,255,0.90)}
-    .flag-chip{width:32px;height:22px;border-radius:4px;overflow:hidden;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:1fr 1fr;box-shadow:0 0 0 1px rgba(255,255,255,0.28)}
-    .flag-chip span:nth-child(1){grid-row:1/3;grid-column:1;background:var(--flag-green)}
-    .flag-chip span:nth-child(2){grid-row:1;grid-column:2;background:var(--flag-yellow)}
-    .flag-chip span:nth-child(3){grid-row:2;grid-column:2;background:var(--flag-red)}
+    .flag-nav-wrap{position:relative}
+    .flag-chip{width:38px;height:26px;border-radius:5px;cursor:pointer;border:none;padding:0;background:none;position:relative;transition:transform .15s,box-shadow .15s;box-shadow:0 0 0 1px rgba(255,255,255,0.28)}
+    .flag-chip:hover{transform:scale(1.06);box-shadow:0 0 0 2px rgba(255,255,255,0.55)}
+    .flag-bg{position:absolute;inset:0;border-radius:5px;overflow:hidden;display:grid;grid-template-columns:2fr 3fr;grid-template-rows:1fr 1fr;pointer-events:none}
+    .flag-bg span:nth-child(1){grid-row:1/3;grid-column:1;background:var(--flag-green)}
+    .flag-bg span:nth-child(2){grid-row:1;grid-column:2;background:var(--flag-yellow)}
+    .flag-bg span:nth-child(3){grid-row:2;grid-column:2;background:var(--flag-red)}
+    .hb-line{position:absolute;left:50%;transform:translateX(-50%);width:18px;height:2px;background:#fff;border-radius:1px;box-shadow:0 0 3px rgba(0,0,0,0.5);pointer-events:none;transition:transform .22s,opacity .22s,top .22s,width .22s}
+    .hb-line:nth-child(2){top:6px}
+    .hb-line:nth-child(3){top:12px}
+    .hb-line:nth-child(4){top:18px}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(2){top:12px;transform:translateX(-50%) rotate(45deg)}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(3){opacity:0;width:0}
+    .flag-chip[aria-expanded="true"] .hb-line:nth-child(4){top:12px;transform:translateX(-50%) rotate(-45deg)}
+    .flag-nav{position:absolute;top:calc(100% + 10px);right:0;min-width:200px;background:rgba(4,8,14,0.96);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);opacity:0;transform:translateY(-6px) scale(0.97);pointer-events:none;transition:opacity .18s,transform .18s;z-index:200;backdrop-filter:blur(12px)}
+    .flag-nav.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+    .flag-nav a{display:flex;align-items:center;padding:10px 14px;border-radius:8px;color:rgba(255,255,255,0.85);text-decoration:none;font-size:14px;font-weight:600;font-family:var(--font-display);letter-spacing:0.01em;transition:background .12s,color .12s}
+    .flag-nav a:hover{background:rgba(255,255,255,0.08);color:#fff}
+    .flag-nav a.active{color:var(--flag-yellow)}
+    .flag-nav-sep{height:1px;background:rgba(255,255,255,0.08);margin:4px 0}
 
     .conf-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,4vw,48px) clamp(16px,4vw,40px) clamp(32px,5vw,56px)}
     .conf-intro{text-align:center;margin-bottom:28px;max-width:480px}
@@ -141,6 +155,8 @@ export function confirmationPage(priceDisplay, baseUrl) {
     }
     @media(prefers-reduced-motion:reduce){.slide{animation:none;opacity:1}.slide:nth-child(n+2){opacity:0}.check-circle{animation:none}}
   </style>
+<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','2383978405745430');fbq('track','PageView');fbq('track','Lead',{currency:'EUR',value:5.99});</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2383978405745430&ev=PageView&noscript=1"/></noscript>
 </head>
 <body>
   <div class="slideshow" aria-hidden="true"><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div><div class="slide"></div></div>
@@ -148,10 +164,23 @@ export function confirmationPage(priceDisplay, baseUrl) {
 
   <nav class="topbar">
     <a href="/" class="wordmark" aria-label="Alertes Vols Bénin - accueil">
-      <span class="wordmark-icon" aria-hidden="true">✈</span>
+      <img src="/logo-icon.svg" alt="" aria-hidden="true" style="width:36px;height:36px;border-radius:8px;display:block;flex-shrink:0">
       <span class="wordmark-label">Alertes Vols Bénin</span>
     </a>
-    <div class="flag-chip" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="flag-nav-wrap">
+      <button class="flag-chip" id="flagMenuBtn" aria-label="Menu" aria-expanded="false" aria-controls="flagNav">
+        <div class="flag-bg"><span></span><span></span><span></span></div>
+        <span class="hb-line"></span>
+        <span class="hb-line"></span>
+        <span class="hb-line"></span>
+      </button>
+      <nav class="flag-nav" id="flagNav" role="menu">
+        <a href="/" role="menuitem">Accueil</a>
+        <a href="/inscription" role="menuitem" class="active">Inscription</a>
+        <div class="flag-nav-sep"></div>
+        <a href="/diaspora" role="menuitem">Pour la diaspora</a>
+      </nav>
+    </div>
   </nav>
 
   <main class="conf-main">
@@ -199,6 +228,25 @@ export function confirmationPage(priceDisplay, baseUrl) {
     <div class="footer-bar"><div class="bar-green"></div><div class="bar-yellow"></div><div class="bar-red"></div></div>
   </footer>
   ${shareFabHtml(shareUrl)}
+<script>
+(function(){
+  var btn=document.getElementById('flagMenuBtn');
+  var nav=document.getElementById('flagNav');
+  if(btn&&nav){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var open=nav.classList.toggle('open');
+      btn.setAttribute('aria-expanded',open?'true':'false');
+    });
+    document.addEventListener('click',function(e){
+      if(!nav.contains(e.target)&&e.target!==btn){
+        nav.classList.remove('open');
+        btn.setAttribute('aria-expanded','false');
+      }
+    });
+  }
+})();
+</script>
 </body>
 </html>`;
 }

@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Alertes Vols Bénin — film</title>
+<!--
+  CONTRAT DE RENDU : window.DURATION · window.seek(t) pur · window.__ready · ?w=&h= · ?guides=1 · ?render=1
+-->
+<style>
+  @font-face { font-family: "Sora"; src: url(fonts/sora-latin.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: "Sora"; src: url(fonts/sora-latin-ext.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: "Inter"; src: url(fonts/inter-latin.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: "Inter"; src: url(fonts/inter-latin-ext.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  :root {
+    --deep: #1B2B3C; --deep2: #243A50; --bg: #F8F6F1; --white: #FFFFFF; --muted: #667888;
+    --green: #008751; --green2: #00A86B; --yellow: #FCD116; --red: #E8112D;
+  }
+  html, body { margin: 0; background: var(--bg); overflow: hidden; }
+  #stage { position: relative; overflow: hidden; background: var(--bg); color: var(--deep);
+           font-family: "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  #world { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  .a { position: absolute; left: 0; top: 0; will-change: auto; }
+  .panel { position: absolute; left: 0; top: 0; }
+  .h { font-family: "Sora", sans-serif; font-weight: 700; letter-spacing: -0.02em; line-height: 1.04; white-space: nowrap; }
+  .w { display: inline-block; }
+  .hl { color: var(--green); position: relative; }
+  .ul { position: absolute; left: -2%; width: 104%; overflow: visible; }
+  .ul path { fill: none; stroke: var(--green); stroke-linecap: round; }
+  /* tableau des départs */
+  .board { background: #0F1B28; border-radius: 28px; box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+  .row { display: flex; gap: 6px; }
+  .cell { position: relative; display: flex; align-items: center; justify-content: center; background: #1E3044;
+          border-radius: 8px; color: #F8F6F1; font-family: "Inter", sans-serif; font-weight: 700; overflow: hidden; }
+  .cell::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(0,0,0,.45); }
+  .blabel { font-family: "Inter"; font-weight: 600; letter-spacing: .14em; color: rgba(248,246,241,.55); text-transform: uppercase; }
+  /* téléphone */
+  .phone { background: #0B141E; border-radius: 76px; box-shadow: 0 40px 90px rgba(27,43,60,.35), inset 0 0 0 3px #2A3B4D; }
+  .screen { position: absolute; overflow: hidden; background: linear-gradient(180deg, #22374C 0%, #1B2B3C 55%, #14212F 100%); }
+  .island { position: absolute; left: 50%; transform: translateX(-50%); background: #000; border-radius: 999px; }
+  .clock { position: absolute; left: 0; right: 0; text-align: center; color: #fff; font-family: "Sora"; font-weight: 600; letter-spacing: -0.02em; }
+  .date { position: absolute; left: 0; right: 0; text-align: center; color: rgba(255,255,255,.75); font-family: "Inter"; font-weight: 500; }
+  .notif { position: relative; background: rgba(248,246,241,.97); border-radius: 30px; display: flex; gap: 18px; box-sizing: border-box;
+           box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .notif .ico { flex: none; border-radius: 22%; background: var(--green); display: flex; align-items: center; justify-content: center; }
+  .notif .meta { font-family: "Inter"; font-weight: 600; color: var(--muted); display: flex; justify-content: space-between; letter-spacing: .02em; }
+  .notif .ttl { font-family: "Inter"; font-weight: 700; color: var(--deep); display: flex; align-items: center; gap: 10px; }
+  .notif .txt { font-family: "Inter"; font-weight: 500; color: #3A4B5C; line-height: 1.32; }
+  .flag { display: inline-grid; grid-template-columns: 2fr 3fr; grid-template-rows: 1fr 1fr; border-radius: 3px; overflow: hidden; flex: none; }
+  .flag i:nth-child(1) { grid-row: 1 / 3; background: var(--green); }
+  .flag i:nth-child(2) { background: var(--yellow); }
+  .flag i:nth-child(3) { background: var(--red); }
+  /* cartes */
+  .card { background: #fff; border-radius: 34px; box-shadow: 0 2px 24px rgba(27,43,60,.10); box-sizing: border-box; overflow: hidden; }
+  .num { font-family: "Sora"; font-weight: 600; font-style: italic; color: var(--red); }
+  .ct { font-family: "Sora"; font-weight: 700; color: var(--deep); letter-spacing: -0.02em; line-height: 1.08; }
+  .cs { font-family: "Inter"; font-weight: 500; color: var(--muted); line-height: 1.35; }
+  .tick { position: absolute; bottom: 0; border-radius: 6px; background: var(--green); }
+  .btn { background: var(--green); color: #fff; font-family: "Inter"; font-weight: 600; border-radius: 22px; display: flex; align-items: center; justify-content: center; gap: .4em;
+         box-shadow: 0 10px 34px rgba(0,135,81,.30); white-space: nowrap; }
+  .stripe { display: flex; }
+  .stripe i { display: block; height: 100%; }
+  .stripe i:nth-child(1) { flex: 1; background: var(--green); } .stripe i:nth-child(2) { flex: 2; background: var(--yellow); } .stripe i:nth-child(3) { flex: 1; background: var(--red); }
+  .guides { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 99; }
+  .guides div { position: absolute; background: rgba(255, 0, 80, .18); outline: 1px dashed rgba(255, 0, 80, .6); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="world"></div><div class="guides" id="guides"></div></div>
+<script src="motion-kit.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const W = +q.get("w") || 1080, H = +q.get("h") || 1920;
+const stage = document.getElementById("stage"), world = document.getElementById("world");
+stage.style.width = W + "px"; stage.style.height = H + "px";
+const FORMAT = W < H ? "vertical" : W > H ? "landscape" : "square";
+const L = (v, l, s) => FORMAT === "vertical" ? v : FORMAT === "landscape" ? l : s;
+const { clamp, lerp, map, spring, track, ease, tween, stagger, noise1, flap } = MK;
+window.DURATION = 17.5;
+const BPM = 120, B = 0.5;
+const PLANE = '<svg viewBox="-128 -128 256 256" width="62%" height="62%"><path d="M0,-120C8,-116 14,-104 14,-88L14,-40L120,-16L120,8L14,24L14,72L56,100L56,116L0,92L-56,116L-56,100L-14,72L-14,24L-120,8L-120,-16L-14,-40L-14,-88C-14,-104 -8,-116 0,-120Z" fill="#fff" fill-opacity=".95"/></svg>';
+const FLAG = (w) => `<span class="flag" style="width:${w}px;height:${w * .66}px"><i></i><i></i><i></i></span>`;
+const NB = " "; // espace fine insécable (avant ? ! :)
+
+if (q.get("guides") && FORMAT === "vertical") {
+  const g = document.getElementById("guides"); g.style.display = "block";
+  [[0, 0, W, H * .08], [0, H * .78, W, H * .22], [W * .88, 0, W * .12, H]].forEach(([x, y, w, h]) => {
+    const d = document.createElement("div"); Object.assign(d.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" }); g.appendChild(d);
+  });
+}
+
+/* ---------- helpers DOM ---------- */
+function el(html, cls = "a", parent = world, z = 1) {
+  const d = document.createElement("div"); d.className = cls; d.innerHTML = html; d.style.zIndex = z; parent.appendChild(d); return d;
+}
+// place un élément : ancre (ax, ay) en fraction de sa taille (0.5,0.5 = centre)
+function put(e, x, y, o = 1, s = 1, r = 0, ax = .5, ay = .5, extra = "") {
+  if (o <= 0.002) { e.style.display = "none"; return; }
+  e.style.display = "";
+  e.style.opacity = o;
+  e.style.transformOrigin = `${ax * 100}% ${ay * 100}%`;
+  e.style.transform = `translate(${x}px,${y}px) translate(${-ax * 100}%,${-ay * 100}%) rotate(${r}deg) scale(${s}) ${extra}`;
+}
+function hide(e) { e.style.display = "none"; }
+function words(text) { return text.split(" ").map((w) => `<span class="w">${w}</span>`).join(" "); }
+// cascade de mots : entrée ressort vers le haut, sortie rapide
+function animWords(e, t, tin, tout, dy = 60) {
+  [...e.querySelectorAll(".w")].forEach((w, i) => {
+    const d = i * 0.055, k = spring(t - tin - d, 0.5, 0.82);
+    const out = tout ? ease.inOutCubic(clamp((t - tout - i * 0.025) / 0.22)) : 0;
+    w.style.transform = `translateY(${(1 - k) * dy - out * dy * .8}px)`;
+    w.style.opacity = clamp((t - tin - d) / 0.16) * (1 - out);
+    w.style.filter = out > 0 ? `blur(${out * 8}px)` : "none";
+  });
+}
+function underline(e, t, t0, t1) {
+  const p = e.querySelector(".ul path"); if (!p) return;
+  const len = 1000; p.style.strokeDasharray = len; p.style.strokeDashoffset = len * (1 - ease.inOutCubic(clamp((t - t0) / (t1 - t0))));
+}
+const UL = (sw) => `<svg class="ul" viewBox="0 0 300 30" preserveAspectRatio="none" style="height:.22em;bottom:-.12em"><path pathLength="1000" stroke-width="${sw}" d="M4 20 C 70 8, 150 6, 296 14"/></svg>`;
+
+/* ---------- fonds ---------- */
+const deepPanel = el("", "panel", world, 2); Object.assign(deepPanel.style, { width: W + "px", height: H + "px", background: "var(--deep)" });
+const greenPanel = el("", "panel", world, 30); Object.assign(greenPanel.style, { background: "var(--green)" });
+const deepPanel2 = el("", "panel", world, 40); Object.assign(deepPanel2.style, { width: W + "px", height: H + "px", background: "var(--deep)" });
+const creamIris = el("", "panel", world, 60); Object.assign(creamIris.style, { background: "var(--bg)", borderRadius: "50%" });
+
+/* ---------- personnage (canvas plein cadre, tramé) ---------- */
+const cv = document.createElement("canvas"); cv.width = W; cv.height = H; cv.className = "panel"; cv.style.zIndex = 20; world.appendChild(cv);
+const cx = cv.getContext("2d", { willReadFrequently: true });
+const BAYER = (() => { // matrice 8x8
+  const m = [[0]]; let M = m;
+  for (let n = 1; n < 8; n *= 2) {
+    const N = []; for (let y = 0; y < n * 2; y++) { N.push([]); for (let x = 0; x < n * 2; x++) { const b = M[y % n][x % n] * 4; N[y].push(b + [[0, 2], [3, 1]][(y / n) | 0][(x / n) | 0]); } } M = N;
+  }
+  return M.map((r) => r.map((v) => (v + .5) / 64));
+})();
+const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const DOT = Math.max(2, Math.round(Math.min(W, H) / 360)); // taille du grain de trame
+
+function g(l) { const v = Math.round(clamp(l) * 255); return `rgb(${v},${v},${v})`; }
+function radial(c, x, y, r, stops) { const gr = c.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([o, l]) => gr.addColorStop(o, g(l))); return gr; }
+
+/* pose : {x, y (bas du buste), h (hauteur buste), tilt, blink 0..1, mouth, brow (-1 inquiet .. 1 surpris), look {x,y}, wave 0..1, waveA} */
+function drawChar(c, P) {
+  const k = P.h / 100;
+  c.save(); c.translate(P.x, P.y); c.scale(k, k);
+  // --- torse / blouson
+  c.fillStyle = radial(c, -18, -30, 70, [[0, .5], [.6, .33], [1, .2]]);
+  c.beginPath(); c.moveTo(-54, 2); c.bezierCurveTo(-54, -20, -44, -32, -20, -36); c.lineTo(20, -36); c.bezierCurveTo(44, -32, 54, -20, 54, 2); c.closePath(); c.fill();
+  // t-shirt
+  c.fillStyle = g(.93); c.beginPath(); c.moveTo(-13, -36); c.quadraticCurveTo(0, -22, 13, -36); c.lineTo(9, 2); c.lineTo(-9, 2); c.closePath(); c.fill();
+  c.fillStyle = g(.78); c.fillRect(-9, -18, 18, 20);
+  // col du blouson
+  c.fillStyle = g(.18);
+  c.beginPath(); c.moveTo(-14, -37); c.lineTo(-24, -34); c.lineTo(-12, -14); c.lineTo(-8, -28); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(14, -37); c.lineTo(24, -34); c.lineTo(12, -14); c.lineTo(8, -28); c.closePath(); c.fill();
+  c.strokeStyle = g(.12); c.lineWidth = 1.4; c.beginPath(); c.moveTo(-9, -12); c.lineTo(-9, 2); c.moveTo(9, -12); c.lineTo(9, 2); c.stroke();
+  // --- bras qui salue
+  if (P.wave > 0) {
+    c.save(); c.scale(P.side || 1, 1); c.translate(42, -26); c.rotate((8 + (1 - P.wave) * 120 + Math.sin(P.waveA) * 14) * Math.PI / 180);
+    c.fillStyle = radial(c, -4, -20, 40, [[0, .48], [1, .22]]);
+    c.beginPath(); c.roundRect(-8, -44, 16, 50, 8); c.fill();
+    c.translate(0, -50);
+    c.fillStyle = radial(c, -3, -4, 14, [[0, .72], [1, .38]]);
+    c.beginPath(); c.ellipse(0, 0, 8, 9, 0, 0, Math.PI * 2); c.fill();
+    for (let i = 0; i < 4; i++) { c.beginPath(); c.roundRect(-7 + i * 4, -15, 3.6, 10, 1.8); c.fill(); }
+    c.beginPath(); c.ellipse(-9, 1, 3, 5, -.6, 0, Math.PI * 2); c.fill();
+    c.restore();
+  }
+  // --- cou
+  c.fillStyle = g(.36); c.beginPath(); c.roundRect(-8, -48, 16, 16, 4); c.fill();
+  c.fillStyle = g(.24); c.beginPath(); c.ellipse(0, -40, 9, 3, 0, 0, Math.PI); c.fill();
+  // --- tête
+  c.save(); c.translate(0, -44); c.rotate(P.tilt * Math.PI / 180); c.translate(0, 44);
+  // oreilles
+  c.fillStyle = g(.42);
+  c.beginPath(); c.ellipse(-21.5, -64, 4.2, 6.2, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(21.5, -64, 4.2, 6.2, 0, 0, Math.PI * 2); c.fill();
+  // visage
+  c.fillStyle = radial(c, -9, -76, 34, [[0, .8], [.45, .56], [1, .3]]);
+  c.beginPath(); c.ellipse(0, -65, 21, 24, 0, 0, Math.PI * 2); c.fill();
+  // mâchoire / ombre bas
+  c.fillStyle = "rgba(0,0,0,.10)"; c.beginPath(); c.ellipse(4, -50, 15, 7, 0, 0, Math.PI * 2); c.fill();
+  // cheveux (boucles courtes)
+  const r = MK.rng(5);
+  c.fillStyle = g(.12);
+  c.beginPath(); c.ellipse(0, -78, 22.5, 13, 0, Math.PI, 0); c.fill();
+  c.beginPath(); c.moveTo(-22, -78); c.quadraticCurveTo(-24, -68, -20.5, -64); c.lineTo(-18, -74); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(22, -78); c.quadraticCurveTo(24, -68, 20.5, -64); c.lineTo(18, -74); c.closePath(); c.fill();
+  for (let i = 0; i < 26; i++) {
+    const a = Math.PI + (i / 25) * Math.PI, rr = 4.2 + r() * 1.6;
+    c.fillStyle = g(.1 + r() * .06);
+    c.beginPath(); c.arc(Math.cos(a) * 21, -79 + Math.sin(a) * 12.5, rr, 0, Math.PI * 2); c.fill();
+  }
+  for (let i = 0; i < 34; i++) { // reflets de boucles
+    const a = Math.PI * (1.08 + r() * .84), d = r() * .9;
+    c.fillStyle = g(.3 + r() * .14);
+    c.beginPath(); c.arc(Math.cos(a) * 20 * d - 3, -80 + Math.sin(a) * 12 * d, 1 + r() * 1.3, 0, Math.PI * 2); c.fill();
+  }
+  // sourcils
+  const bw = P.brow || 0;
+  c.strokeStyle = g(.06); c.lineWidth = 2.6; c.lineCap = "round";
+  [-1, 1].forEach((sd) => {
+    c.beginPath();
+    c.moveTo(sd * 3.5, -73.5 - (bw < 0 ? -bw * 3.2 : 0) - (bw > 0 ? bw * 2 : 0));
+    c.lineTo(sd * 12.5, -74 + (bw < 0 ? -bw * 1.2 : 0) - (bw > 0 ? bw * 2.6 : 0));
+    c.stroke();
+  });
+  // yeux
+  const bl = 1 - clamp(P.blink || 0) * .92, lx = (P.look?.x || 0) * 1.6, ly = (P.look?.y || 0) * 1.4;
+  [-1, 1].forEach((sd) => {
+    c.save(); c.translate(sd * 8, -65.5); c.scale(1, bl);
+    c.fillStyle = g(1); c.beginPath(); c.ellipse(0, 0, 4.8, 5.4, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = g(0); c.beginPath(); c.arc(lx, ly + .4, 3, 0, Math.PI * 2); c.fill();
+    c.fillStyle = g(1); c.beginPath(); c.arc(lx - 1, ly - .8, 1.05, 0, Math.PI * 2); c.fill();
+    c.restore();
+    c.strokeStyle = g(.08); c.lineWidth = 1.3; c.beginPath(); c.ellipse(sd * 8, -65.5, 5, 5.6 * bl, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+  });
+  // nez
+  c.fillStyle = g(.3); c.beginPath(); c.ellipse(0, -58.5, 4, 2.6, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = g(.62); c.beginPath(); c.ellipse(-1, -60, 1.6, 1, 0, 0, Math.PI * 2); c.fill();
+  // bouche
+  c.save(); c.translate(0, -51);
+  if (P.mouth === "open") {
+    c.fillStyle = g(.04); c.beginPath(); c.moveTo(-7.5, -1.5); c.quadraticCurveTo(0, 0, 7.5, -1.5); c.quadraticCurveTo(0, 11, -7.5, -1.5); c.fill();
+    c.fillStyle = g(1); c.beginPath(); c.moveTo(-6, -.8); c.quadraticCurveTo(0, .4, 6, -.8); c.lineTo(5, 1.6); c.quadraticCurveTo(0, 2.6, -5, 1.6); c.fill();
+    c.fillStyle = g(.5); c.beginPath(); c.ellipse(0, 5.4, 3.2, 1.6, 0, 0, Math.PI * 2); c.fill();
+  } else if (P.mouth === "worry") {
+    c.strokeStyle = g(.05); c.lineWidth = 2; c.beginPath(); c.moveTo(-5, 2.5); c.quadraticCurveTo(0, -1.8, 5, 2.5); c.stroke();
+  } else if (P.mouth === "o") {
+    c.fillStyle = g(.04); c.beginPath(); c.ellipse(0, 1.5, 3, 3.8, 0, 0, Math.PI * 2); c.fill();
+  } else {
+    c.strokeStyle = g(.05); c.lineWidth = 2; c.beginPath(); c.moveTo(-6, -.5); c.quadraticCurveTo(0, 5, 6, -.5); c.stroke();
+  }
+  c.restore();
+  c.restore(); // tête
+  c.restore();
+}
+function ditherChar(P, ink, paper) {
+  const k = P.h / 100;
+  const x0 = Math.max(0, Math.floor(P.x - 80 * k)), y0 = Math.max(0, Math.floor(P.y - 108 * k));
+  const x1 = Math.min(W, Math.ceil(P.x + 80 * k)), y1 = Math.min(H, Math.ceil(P.y + 4 * k));
+  const w = x1 - x0, h = y1 - y0; if (w <= 0 || h <= 0) return;
+  const img = cx.getImageData(x0, y0, w, h), d = img.data, I = hex(ink), Pp = hex(paper);
+  for (let y = 0; y < h; y++) {
+    const by = BAYER[(((y + y0) / DOT) | 0) & 7];
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (d[i + 3] < 128) { d[i + 3] = 0; continue; }
+      let l = d[i] / 255; l = clamp((l - .5) * 1.18 + .52);
+      const c = l > by[(((x + x0) / DOT) | 0) & 7] ? Pp : I;
+      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
+    }
+  }
+  cx.putImageData(img, x0, y0);
+}
+function pin(P) { // pin's drapeau en couleur (hors trame)
+  const k = P.h / 100, x = P.x - 30 * k, y = P.y - 22 * k, w = 9 * k, h = 6 * k;
+  cx.save(); cx.translate(x, y); cx.rotate(-.08);
+  cx.fillStyle = "#fff"; cx.beginPath(); cx.roundRect(-w / 2 - k * .8, -h / 2 - k * .8, w + k * 1.6, h + k * 1.6, k * 1.2); cx.fill();
+  cx.fillStyle = "#008751"; cx.fillRect(-w / 2, -h / 2, w * .4, h);
+  cx.fillStyle = "#FCD116"; cx.fillRect(-w / 2 + w * .4, -h / 2, w * .6, h / 2);
+  cx.fillStyle = "#E8112D"; cx.fillRect(-w / 2 + w * .4, 0, w * .6, h / 2);
+  cx.restore();
+}
+
+/* ---------- SCÈNE 1 — hook ---------- */
+const s1 = el(`<div class="h" style="font-size:${L(122, 118, 100)}px">${words("Vous rentrez")}<br>${words("au Bénin")}<br><span class="w">pour</span> <span class="w">les</span> <span class="w hl">fêtes${UL(14)}</span><span class="w">${NB}?</span></div>`, "a", world, 10);
+
+/* ---------- SCÈNE 2 — tableau des départs ---------- */
+const CELL = L(60, 64, 54);
+function flapRow(n, color) { return `<div class="row">${Array.from({ length: n }, () => `<div class="cell" style="width:${CELL}px;height:${CELL * 1.42}px;font-size:${CELL * .82}px;${color ? "background:" + color : ""}"><span></span></div>`).join("")}</div>`; }
+const board = el(`<div class="board" style="padding:${CELL * .7}px ${CELL * .6}px">
+  <div class="blabel" style="font-size:${CELL * .36}px;margin-bottom:${CELL * .35}px;display:flex;justify-content:space-between"><span>Départs</span><span>Vol spécial · déc. 2025</span></div>
+  <div id="r1">${flapRow(15)}</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:${CELL * .45}px">
+    <div class="blabel" style="font-size:${CELL * .36}px">Statut</div><div id="r2">${flapRow(7)}</div></div></div>`, "a", world, 12);
+const r1 = [...board.querySelectorAll("#r1 .cell span")], r2c = [...board.querySelectorAll("#r2 .cell")], r2 = r2c.map((c) => c.firstChild);
+const s2 = el(`<div class="h" style="font-size:${L(92, 88, 76)}px;color:#F8F6F1">${words("Décembre 2025 :")}<br><span style="color:#FF6B7D">${words("complet en")}</span><br><span style="color:#FF6B7D">${words("quelques minutes.")}</span></div>`, "a", world, 12);
+
+/* ---------- SCÈNE 3 — téléphone ---------- */
+const s3 = el(`<div class="h" style="font-size:${L(116, 110, 96)}px">${words("Cette fois,")}<br><span class="w">soyez</span> <span class="w hl">prévenu.${UL(14)}</span></div>`, "a", world, 10);
+const PW = L(700, 560, 520), PH = PW * 2.05, PR = PW * .06;
+const phone = el(`<div class="phone" style="width:${PW}px;height:${PH}px;position:relative">
+  <div class="screen" style="left:${PR}px;top:${PR}px;right:${PR}px;bottom:${PR}px;border-radius:${PW * .1}px">
+    <div class="island" style="top:${PW * .035}px;width:${PW * .3}px;height:${PW * .075}px"></div>
+    <div class="date" style="top:${PW * .17}px;font-size:${PW * .045}px">Mardi 8 décembre</div>
+    <div class="clock" style="top:${PW * .21}px;font-size:${PW * .24}px">08:14</div>
+  </div></div>`, "a", world, 14);
+const NW = PW * L(1.16, 1.1, 1.1), NF = 1.22;
+function notif(label, title, text, flagged) {
+  return `<div class="notif" style="width:${NW}px;padding:${PW * .042}px;border-radius:${PW * .06}px">
+    <div class="ico" style="width:${PW * .13}px;height:${PW * .13}px">${PLANE}</div>
+    <div style="flex:1;min-width:0">
+      <div class="meta" style="font-size:${PW * .03 * NF}px;margin-bottom:${PW * .008}px"><span>${label}</span><span>maintenant</span></div>
+      <div class="ttl" style="font-size:${PW * .042 * NF}px;margin-bottom:${PW * .008}px">${flagged ? FLAG(PW * .05) : ""}<span>${title}</span></div>
+      <div class="txt" style="font-size:${PW * .036 * NF}px">${text}</div></div></div>`;
+}
+const nSms = el(notif("SMS", "Alertes Vols Bénin", "Bonjour Rodrigue, Alertes Vols Bénin vous informe que voyage.benin.bj est ouvert. Réservez vite votre billet&nbsp;!", false), "a", world, 15);
+const nMail = el(notif("EMAIL", "Réservation Bénin OUVERTE&nbsp;!", "Bonjour Rodrigue, Alertes Vols Bénin vous informe que voyage.benin.bj est ouvert…", true), "a", world, 16);
+
+/* ---------- SCÈNE 4 — typo cinétique ---------- */
+const k1 = el(`<div class="h" style="color:#fff;font-size:${L(230, 250, 200)}px;line-height:.98">${L("Email<br>+ SMS", "Email + SMS", "Email<br>+ SMS")}</div>`, "a", world, 32);
+const k2 = el(`<div class="h" style="color:#fff;font-size:${L(112, 110, 96)}px;text-align:${L("left", "center", "left")}">${words("en moins")}${L("<br>", " ", "<br>")}${words("d’une minute.")}</div>`, "a", world, 32);
+
+/* ---------- SCÈNE 5 — cartes ---------- */
+const GRID = L({ cols: 2, x: 70, y: 230, w: 840, gap: 26, rh: 322,
+  items: { A: [0, 0, 1, 1], F: [1, 0, 1, 1], Bm: [0, 1, 2, 1], C: [0, 2, 1, 1], D: [1, 2, 1, 1], G: [0, 3, 2, .45] } },
+  { cols: 4, x: 150, y: 170, w: 1620, gap: 28, rh: 350,
+  items: { A: [0, 0, 1, 1], Bm: [1, 0, 2, 1], F: [3, 0, 1, 1], C: [0, 1, 2, 1], D: [2, 1, 1, 1], G: [3, 1, 1, 1] } },
+  { cols: 3, x: 70, y: 110, w: 940, gap: 22, rh: 262,
+  items: { A: [0, 0, 1, 1], Bm: [1, 0, 2, 1], C: [0, 1, 2, 1], D: [2, 1, 1, 1], F: [0, 2, 1, .92], G: [1, 2, 2, .92] } });
+const colW = (GRID.w - GRID.gap * (GRID.cols - 1)) / GRID.cols;
+const FS = L(1, 1.12, .9);
+const cardHTML = {
+  A: `<div class="num" style="font-size:${40 * FS}px">01</div><div class="ct" style="font-size:${Math.min(46 * FS, colW / 8.4)}px;margin-top:${14 * FS}px;white-space:nowrap">Inscrivez&#8209;vous</div><div class="cs" style="font-size:${25 * FS}px;margin-top:${10 * FS}px">Email + téléphone.</div>`,
+  Bm: `<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="num" style="font-size:${40 * FS}px">02</div><div class="ct" style="font-size:${50 * FS}px;margin-top:${14 * FS}px">On surveille<br>chaque minute</div></div>
+       <div class="cs" style="font-size:${24 * FS}px;text-align:right">voyage.benin.bj<br><b style="color:var(--green)">24h/24 · 7j/7</b></div></div>
+       <div class="ticks" style="position:absolute;left:${36 * FS}px;right:${36 * FS}px;bottom:${30 * FS}px;height:${70 * FS}px"></div>`,
+  C: `<div class="num" style="font-size:${40 * FS}px">03</div><div class="ct" style="font-size:${50 * FS}px;margin-top:${14 * FS}px">Vous recevez<br>l’alerte</div><div class="cs" style="font-size:${25 * FS}px;margin-top:${10 * FS}px">Email + SMS en même temps.</div>`,
+  D: `<div class="cs" style="color:rgba(255,255,255,.8);font-size:${25 * FS}px">Inscription</div><div class="h" style="color:#fff;font-size:${86 * FS}px;margin-top:${10 * FS}px">5,99${NB}€</div><div class="cs" style="color:rgba(255,255,255,.85);font-size:${25 * FS}px;margin-top:${8 * FS}px">paiement unique</div>`,
+  F: ``,
+  G: `<div class="cs" style="font-size:${26 * FS}px;color:var(--deep);display:flex;align-items:center;gap:14px;height:100%"><svg width="${34 * FS}" height="${34 * FS}" viewBox="0 0 24 24" style="flex:none"><circle cx="12" cy="12" r="11" fill="#008751"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Remboursement intégral</b> si aucun vol n’ouvre sous 18${NB}mois.</span></div>`,
+};
+const cards = {};
+for (const [id, [c, r, cs, rs]] of Object.entries(GRID.items)) {
+  const w = colW * cs + GRID.gap * (cs - 1);
+  const rowY = GRID.y + [0, 1, 2, 3].slice(0, r).reduce((a, i) => a + GRID.rh * (Object.values(GRID.items).some(v => v[1] === i && v[3] < 1) ? Object.values(GRID.items).find(v => v[1] === i)[3] : 1) + GRID.gap, 0);
+  const h = GRID.rh * rs;
+  const bg = id === "D" ? "var(--green)" : id === "F" ? "var(--deep)" : "#fff";
+  const pad = id === "G" ? `0 ${34 * FS}px` : `${32 * FS}px ${36 * FS}px`;
+  const e = el(`<div class="card" style="width:${w}px;height:${h}px;padding:${pad};background:${bg};position:relative">${cardHTML[id]}</div>`, "a", world, 11);
+  cards[id] = { e, x: GRID.x + c * (colW + GRID.gap) + w / 2, y: rowY + h / 2, w, h, order: Object.keys(GRID.items).indexOf(id) };
+}
+const ticksBox = cards.Bm.e.querySelector(".ticks");
+const NT = L(26, 40, 32);
+const ticks = Array.from({ length: NT }, () => { const d = document.createElement("div"); d.className = "tick"; ticksBox.appendChild(d); return d; });
+
+/* ---------- SCÈNE 6 ---------- */
+const s6a = el(`<div class="h" style="font-size:${L(112, 124, 100)}px;color:#F8F6F1">${words("Vous voyagez.")}</div>`, "a", world, 45);
+const s6b = el(`<div class="h" style="font-size:${L(112, 124, 100)}px;color:var(--green2)">${words("On surveille.")}</div>`, "a", world, 45);
+
+/* ---------- SCÈNE 7 — fin ---------- */
+const LS = L(1.4, 1.45, 1.05);
+const logo = el(`<div style="width:${150 * LS}px;height:${150 * LS}px;border-radius:${29 * LS}px;background:var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 40px rgba(0,135,81,.28)">${PLANE}</div>`, "a", world, 70);
+const wordmark = el(`<div class="h" style="font-size:${64 * LS}px;color:var(--deep);text-align:center">Alertes Vols Bénin</div><div class="stripe" style="height:${7 * LS}px;width:${260 * LS}px;margin:${16 * LS}px auto 0;border-radius:4px;overflow:hidden"><i></i><i></i><i></i></div>`, "a", world, 70);
+const tagline = el(`<div style="font-family:Inter;font-weight:500;color:var(--muted);font-size:${34 * LS}px;text-align:center;white-space:nowrap">Soyez prévenu dès l’ouverture.</div>`, "a", world, 70);
+const cta = el(`<div class="btn" style="font-size:${46 * LS}px;padding:${30 * LS}px ${62 * LS}px">S’inscrire · 5,99${NB}€ <svg width="${40 * LS}" height="${40 * LS}" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`, "a", world, 70);
+const url = el(`<div class="h" style="font-size:${40 * LS}px;color:var(--deep);white-space:nowrap">https://alertesvolsbenin.com/</div>`, "a", world, 70);
+const legal = el(`<div style="font-family:Inter;font-weight:500;color:#51606E;font-size:${L(31, 30, 26)}px;line-height:1.4;text-align:center;width:${L(840, 1100, 900)}px">Service indépendant, non affilié au Gouvernement du Bénin ni à Bénin Tours S.A. Nous ne vendons pas de billets.</div>`, "a", world, 70);
+const stripeBottom = el(`<div class="stripe" style="width:${W}px;height:${L(14, 12, 12)}px"><i></i><i></i><i></i></div>`, "a", world, 70);
+const cursor = el(`<svg width="${64 * LS}" height="${64 * LS}" viewBox="0 0 24 24"><path d="M5 3l14 8-6.2 1.6L10 19z" fill="#1B2B3C" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>`, "a", world, 80);
+
+/* ---------- layout par format ---------- */
+const LY = {
+  s1: L([90, 300], [150, 330], [80, 150]),
+  char1: L({ x: W * .62, y: H, h: H * .5 }, { x: W * .72, y: H, h: H * .86 }, { x: W * .7, y: H, h: H * .6 }),
+  board: L([W / 2, H * .25], [W * .36, H * .34], [W / 2, H * .22]),
+  s2: L([90, H * .4], [W * .36 - 470, H * .58], [70, H * .44]),
+  char2: L({ x: W * .6, y: H, h: H * .36 }, { x: W * .8, y: H, h: H * .8 }, { x: W * .84, y: H, h: H * .38 }),
+  s3: L([90, 190], [150, 200], [70, 110]),
+  phone: L([W * .58, H * .31], [W * .74, H * .1], [W * .64, H * .3]),
+  char3: L({ x: W * .24, y: H, h: H * .34 }, { x: W * .22, y: H, h: H * .46 }, { x: W * .19, y: H, h: H * .4 }),
+  s6: L([90, H * .2], [150, H * .36], [80, H * .2]),
+  char6: L({ x: W * .6, y: H, h: H * .56 }, { x: W * .7, y: H, h: H * .9 }, { x: W * .72, y: H, h: H * .5 }),
+  end: L({ logo: H * .17, word: H * .3, tag: H * .365, cta: H * .47, url: H * .565, legal: H * .67 },
+         { logo: H * .14, word: H * .3, tag: H * .41, cta: H * .53, url: H * .665, legal: H * .83 },
+         { logo: H * .15, word: H * .31, tag: H * .4, cta: H * .53, url: H * .65, legal: H * .8 }),
+};
+
+/* ---------- rendu ---------- */
+function charPose(t) {
+  // renvoie {P, ink, paper} ou null
+  const blinkAt = (tb) => { const d = Math.abs(t - tb); return d < .09 ? 1 - d / .09 : 0; };
+  const breathe = Math.sin(t * 2.4) * .006;
+  if (t < 2.62) { // S1
+    const c = LY.char1, k = spring(t - .05, .6, .8), out = ease.inOutCubic(clamp((t - 2.36) / .26));
+    return { P: { x: c.x + noise1(t * .6) * 6, y: c.y + (1 - k) * c.h * 1.1 + out * c.h * .15, h: c.h * (1 + breathe), tilt: -4 + Math.sin(t * 3) * 2 + (1 - k) * 8,
+      blink: blinkAt(1.9), mouth: t > .55 ? "open" : "smile", brow: t > .5 && t < 1.6 ? .6 : .1, look: { x: -.6, y: -.1 },
+      wave: clamp(spring(t - .5, .45, .85)) * (1 - ease.inOutCubic(clamp((t - 1.95) / .3))), waveA: (t - .5) * 11, side: L(-1, 1, -1) }, ink: "#1B2B3C", paper: "#FFFFFF" };
+  }
+  if (t >= 2.62 && t < 5) { // S2
+    const c = LY.char2, k = spring(t - 2.62, .55, .86), worried = t > 3.62;
+    return { P: { x: c.x, y: c.y + (1 - k) * c.h, h: c.h * (1 + breathe), tilt: worried ? 5 : -2, blink: blinkAt(3.05) + blinkAt(4.4),
+      mouth: worried ? (t > 3.62 && t < 3.95 ? "o" : "worry") : "smile", brow: worried ? -1 : .2, look: worried ? { x: .9, y: -.8 } : { x: .6, y: -.9 }, wave: 0 },
+      ink: "#0B141E", paper: "#F8F6F1" };
+  }
+  if (t >= 5 && t < 7.4) { // S3
+    const c = LY.char3, k = spring(t - 5.18, .55, .84), out = ease.inOutCubic(clamp((t - 7.1) / .25)), happy = t > 5.9;
+    return { P: { x: c.x, y: c.y + (1 - k) * c.h + out * c.h * .8, h: c.h * (1 + breathe), tilt: happy ? L(6, -6, 6) : 0, blink: blinkAt(6.75),
+      mouth: happy ? "open" : "o", brow: happy ? .8 : .4, look: { x: L(1, -1, 1), y: -.3 }, wave: 0 }, ink: "#1B2B3C", paper: "#FFFFFF" };
+  }
+  if (t >= 9.5 && t < 12.5) { // S5 avatar dans la carte F
+    const f = cards.F, k = cardIn(t, f.order), out = ease.inOutCubic(clamp((t - 12.3) / .2));
+    const h = f.h * .92;
+    return { P: { x: f.x + noise1(t * .8, 3) * 3, y: f.y + f.h / 2 + (1 - k) * 60 + out * H * .7, h, tilt: Math.sin(t * 2.6) * 3, blink: blinkAt(10.6) + blinkAt(11.9),
+      mouth: "smile", brow: .2, look: { x: .2, y: -.2 }, wave: 0 }, ink: "#0B141E", paper: "#F8F6F1", clip: f };
+  }
+  if (t >= 12.5 && t < 14.5) { // S6
+    const c = LY.char6, k = spring(t - 12.55, .6, .86);
+    return { P: { x: c.x, y: c.y + (1 - k) * c.h * .9, h: c.h * (1 + breathe), tilt: -3 + Math.sin(t * 2) * 1.5, blink: blinkAt(13.4),
+      mouth: t > 13.25 ? "open" : "smile", brow: t > 13.25 ? .5 : 0, look: { x: -.7, y: -.4 }, wave: t > 13.25 ? clamp(spring(t - 13.25, .45, .85)) : 0, waveA: (t - 13.25) * 10, side: L(-1, 1, 1) },
+      ink: "#0B141E", paper: "#F8F6F1" };
+  }
+  return null;
+}
+function cardIn(t, order) { return spring(t - 9.55 - order * 0.075, .5, .82); }
+
+window.seek = function (t) {
+  // caméra : dérive continue + poussées
+  let camS = 1 + noise1(t * .35, 2) * .004, camX = noise1(t * .5, 4) * 5, camY = noise1(t * .45, 9) * 5, camR = noise1(t * .3, 12) * .15;
+  camS += tween(t, 0, 2.5, 0, .03, ease.inOutCubic) * (t < 2.5);
+  camS += tween(t, 9.5, 12.5, 0, .025, ease.inOutCubic) * (t >= 9.5 && t < 12.5);
+  camS += tween(t, 5.8, 7.3, 0, .05, ease.inOutCubic) * (t >= 5 && t < 7.5);
+  camS += tween(t, 12.5, 14.5, 0, .03, ease.inOutCubic) * (t >= 12.5 && t < 14.5);
+  world.style.transform = `translate(${camX}px,${camY}px) rotate(${camR}deg) scale(${camS})`;
+
+  /* --- S1 --- */
+  if (t < 2.62) { put(s1, LY.s1[0], LY.s1[1], 1, 1, 0, 0, 0); animWords(s1, t, .45, 2.3); underline(s1, t, 1.25, 1.7); } else hide(s1);
+
+  /* --- fond deep S2 (volet depuis la droite) --- */
+  if (t >= 2.3 && t < 5) {
+    const k = spring(t - 2.3, .5, 1);
+    deepPanel.style.display = ""; deepPanel.style.transform = `translateX(${(1 - k) * W}px)`;
+    deepPanel.style.borderRadius = `${(1 - k) * 120}px 0 0 ${(1 - k) * 120}px`;
+  } else hide(deepPanel);
+
+  /* --- S2 tableau --- */
+  if (t >= 2.5 && t < 5) {
+    const k = spring(t - 2.55, .5, .84), out = ease.inOutCubic(clamp((t - 4.8) / .2));
+    put(board, LY.board[0], LY.board[1] + (1 - k) * 80 - out * 40, clamp((t - 2.55) / .15) * (1 - out), .94 + .06 * k);
+    const route = "PARIS → COTONOU", st = t < 3.55 ? "OUVERT " : "COMPLET";
+    const s1t = flap(t, 2.65, route, .018, 11);
+    r1.forEach((sp, i) => sp.textContent = s1t[i] || "");
+    const s2t = t < 3.55 ? flap(t, 2.95, " OUVERT", .02, 5) : flap(t, 3.55, "COMPLET", .016, 7);
+    r2.forEach((sp, i) => sp.textContent = s2t[i] || "");
+    const red = t >= 3.55, pop = red ? spring(t - 3.55, .3, .6) : 1;
+    r2c.forEach((c, i) => {
+      const on = !red ? (i > 0 && t > 3.0 + i * .03) : t > 3.55 + i * .04;
+      c.style.background = on ? (red ? "var(--red)" : "var(--green)") : "#1E3044";
+      c.style.transform = `scale(${red ? .9 + .1 * clamp(spring(t - 3.55 - i * .04, .3, .6), 0, 1.2) : 1})`;
+    });
+    put(s2, LY.s2[0], LY.s2[1], 1, 1, 0, 0, 0); animWords(s2, t, 3.62, 4.78);
+  } else { hide(board); hide(s2); }
+
+  /* --- S3 téléphone --- */
+  if (t >= 5 && t < 7.62) {
+    put(s3, LY.s3[0], LY.s3[1], 1, 1, 0, 0, 0); animWords(s3, t, 5.05, 7.05); underline(s3, t, 5.45, 5.85);
+    const k = spring(t - 5.12, .6, .86);
+    const vib = (t > 5.95 && t < 6.25) || (t > 6.45 && t < 6.75) ? Math.sin(t * 190) * 5 : 0;
+    const [px, py] = LY.phone;
+    put(phone, px + vib, py + (1 - k) * H * .6, 1, 1, (1 - k) * 8 + vib * .15, .5, 0);
+    const sy = py + PW * .66, nx = px + vib;
+    const kS = spring(t - 5.95, .38, .74), kM = spring(t - 6.45, .38, .74);
+    const hM = nMail.firstChild.offsetHeight, hS = nSms.firstChild.offsetHeight;
+    const shift = kM * (hM / 2 + hS / 2 + 18);
+    put(nSms, nx, (1 - k) * H * .6 + sy + (1 - kS) * -PW * .25 + shift, clamp((t - 5.95) / .12), .9 + .1 * kS);
+    put(nMail, nx, (1 - k) * H * .6 + sy + (1 - kM) * -PW * .25, clamp((t - 6.45) / .12), .9 + .1 * kM);
+  } else { hide(s3); hide(phone); hide(nSms); hide(nMail); }
+
+  /* --- transition S3→S4 : l'icône verte grandit plein cadre --- */
+  if (t >= 7.1 && t < 9.5) {
+    const [px, py] = LY.phone, ico = PW * .13;
+    const hM = nMail.firstChild.offsetHeight;
+    const ico2 = PW * .13, ix = px - NW / 2 + PW * .042 + ico2 / 2, iy = py + PW * .66 - hM / 2 + ico2 / 2 + PW * .042;
+    const p = ease.inOutExpo(clamp((t - 7.12) / .42));
+    const R = Math.hypot(W, H) * 1.05, size = lerp(ico, R * 2, p);
+    const cxp = lerp(ix, W / 2, p), cyp = lerp(iy, H / 2, p);
+    greenPanel.style.display = ""; greenPanel.style.width = greenPanel.style.height = size + "px";
+    greenPanel.style.borderRadius = lerp(ico * .22, size / 2, clamp(p * 1.4)) + "px";
+    greenPanel.style.transform = `translate(${cxp - size / 2}px,${cyp - size / 2}px)`;
+    // S4 typo
+    const e1 = spring(t - 7.55, .45, .9), ex = ease.inOutCubic(clamp((t - 9.12) / .3));
+    const v1 = Math.abs((1 - e1)) * 900 + ex * 1600;
+    const kx = L(90, W / 2, 80), ky = L(H * .3, H * .38, H * .24);
+    put(k1, kx + (1 - e1) * W * .9 - ex * W * 1.1, ky, clamp((t - 7.55) / .08), 1, 0, L(0, .5, 0), .5,
+      `skewX(${-clamp(v1 / 90, 0, 14)}deg)`);
+    k1.style.filter = v1 > 40 ? `blur(${Math.min(22, v1 / 70)}px)` : "none";
+    put(k2, L(90, W / 2, 80), L(H * .52, H * .64, H * .6) - ex * 0, 1, 1, 0, L(0, .5, 0), 0, `translateX(${-ex * W * 1.1}px)`);
+    animWords(k2, t, 8.2, null, 80); k2.style.filter = ex > 0 ? `blur(${ex * 18}px)` : "none";
+  } else { hide(greenPanel); hide(k1); hide(k2); }
+
+  /* --- S5 cartes --- */
+  if (t >= 9.5 && t < 12.62) {
+    for (const id in cards) {
+      const c = cards[id], k = cardIn(t, c.order), out = ease.inOutCubic(clamp((t - 12.28 - c.order * .02) / .3));
+      put(c.e, c.x, c.y + (1 - k) * 90 - out * 120, clamp((t - 9.55 - c.order * .075) / .15), .9 + .1 * k);
+    }
+    ticks.forEach((d, i) => {
+      const tw = (ticksBox.clientWidth || cards.Bm.w - 72) / NT;
+      const at = 9.9 + i * (2.2 / NT), on = clamp((t - at) / .12);
+      const hgt = on * (.45 + .55 * Math.abs(Math.sin(i * 1.7))) * 100;
+      d.style.left = i * tw + "px"; d.style.width = tw * .55 + "px"; d.style.height = hgt + "%";
+      d.style.opacity = .25 + .75 * clamp(1 - (t - at) / 1.2) * on + (i === Math.floor((t - 9.9) / (2.2 / NT)) ? .5 : 0);
+    });
+  } else Object.values(cards).forEach((c) => hide(c.e));
+
+  /* --- S6 (volet depuis le bas) --- */
+  if (t >= 12.3 && t < 14.62) {
+    const k = spring(t - 12.3, .5, 1);
+    deepPanel2.style.display = ""; deepPanel2.style.transform = `translateY(${(1 - k) * H}px)`;
+    deepPanel2.style.borderRadius = `${(1 - k) * 140}px ${(1 - k) * 140}px 0 0`;
+    put(s6a, LY.s6[0], LY.s6[1], 1, 1, 0, 0, 0); animWords(s6a, t, 12.6, 14.25);
+    put(s6b, LY.s6[0], LY.s6[1] + L(130, 145, 118), 1, 1, 0, 0, 0); animWords(s6b, t, 13.1, 14.25);
+  } else { hide(deepPanel2); hide(s6a); hide(s6b); }
+
+  /* --- S7 iris crème + carte de fin --- */
+  if (t >= 14.25) {
+    const p = ease.inOutExpo(clamp((t - 14.25) / .45)), R = Math.hypot(W, H) * p;
+    const oy = LY.end.logo;
+    creamIris.style.display = ""; creamIris.style.width = creamIris.style.height = 2 * R + "px";
+    creamIris.style.transform = `translate(${W / 2 - R}px,${oy - R}px)`;
+    const E = LY.end;
+    const kl = spring(t - 14.5, .42, .72), bp = MK.pulse(t, BPM, 7) * (t > 15.5) * .015;
+    put(logo, W / 2, E.logo, clamp((t - 14.5) / .1), (.3 + .7 * kl) * (1 + bp), (1 - clamp(kl)) * -25);
+    const up = (e, y, t0, s = 1) => { const k = spring(t - t0, .5, .84); put(e, W / 2, y + (1 - k) * 50, clamp((t - t0) / .18), s); };
+    up(wordmark, E.word, 14.72); up(tagline, E.tag, 14.9);
+    const press = t > 16.35 ? 1 - .06 * Math.exp(-(t - 16.35) * 9) * Math.sin(clamp((t - 16.35) * 8, 0, Math.PI)) : 1;
+    up(cta, E.cta, 15.05, press * (1 + bp));
+    up(url, E.url, 15.2); up(legal, E.legal, 15.35);
+    put(stripeBottom, W / 2, H, 1, 1, 0, .5, 1, `scaleX(${ease.outCubic(clamp((t - 14.6) / .5))})`);
+    // curseur qui clique sur le bouton
+    const ct = clamp((t - 15.7) / .6), kc = ease.inOutCubic(ct);
+    const bw2 = cta.firstChild.offsetWidth / 2;
+    const cxp = lerp(W * L(.85, .85, .85), W / 2 + bw2 - 58 * LS, kc), cyp = lerp(H * L(.62, .8, .8), E.cta + 16 * LS, kc) + Math.sin(ct * Math.PI) * -60;
+    put(cursor, cxp, cyp, clamp((t - 15.7) / .15) * (1 - clamp((t - 16.9) / .25)), t > 16.35 && t < 16.5 ? .88 : 1, 0, .2, .1);
+  } else [creamIris, logo, wordmark, tagline, cta, url, legal, stripeBottom, cursor].forEach(hide);
+
+  /* --- personnage --- */
+  cx.clearRect(0, 0, W, H);
+  const C = charPose(t);
+  if (C) {
+    if (C.clip) { cx.save(); const f = C.clip; const k = cardIn(t, f.order); cx.beginPath(); cx.roundRect(f.x - f.w / 2, f.y - f.h / 2 + (1 - k) * 90 - ease.inOutCubic(clamp((t - 12.28) / .3)) * 120, f.w, f.h, 34); cx.clip(); }
+    drawChar(cx, C.P);
+    if (C.clip) cx.restore();
+    ditherChar(C.P, C.ink, C.paper);
+    pin(C.P);
+  }
+  cv.style.zIndex = t >= 12.3 && t < 14.62 ? 50 : t >= 9.5 && t < 12.62 ? 12 : 20;
+};
+
+Promise.all([document.fonts.ready, ...["Sora", "Inter"].flatMap((f) => [400, 600, 700].map((w) => document.fonts.load(`${w} 40px ${f}`, "Béninàé€→")))])
+  .then(() => { window.seek(0); window.__ready = true; });
+
+if (!q.get("render")) {
+  const t0 = performance.now();
+  (function loop() { window.seek(((performance.now() - t0) / 1000) % window.DURATION); requestAnimationFrame(loop); })();
+}
+</script>
+</body>
+</html>

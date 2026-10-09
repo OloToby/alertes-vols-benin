@@ -2,3 +2,14 @@ node_modules/
 .dev.vars
 .wrangler/
 .claude/
+dist/
+assets/media/*.mp4
+assets/media/*.webm
+assets/media/**/*.mp4
+assets/media/**/*.webm
+contenus/**/*.mp4
+contenus/**/*.webm
+contenus/*.mp4
+contenus/*.webm
+scripts/scraped/
+.playwright-mcp/
