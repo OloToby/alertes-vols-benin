@@ -3,13 +3,10 @@ node_modules/
 .wrangler/
 .claude/
 dist/
-assets/media/*.mp4
-assets/media/*.webm
-assets/media/**/*.mp4
-assets/media/**/*.webm
-contenus/**/*.mp4
-contenus/**/*.webm
-contenus/*.mp4
-contenus/*.webm
-scripts/scraped/
 .playwright-mcp/
+
+# Fichiers lourds dans _workspace
+_workspace/**/*.mp4
+_workspace/**/*.webm
+_workspace/**/*.wav
+_workspace/marketing/scripts/scraped/
